@@ -1,15 +1,25 @@
 import routes from '../config/routes'
-import DefaultLayout from '../layouts/DefaultLayout/DefaultLayout'
-import Home from '../pages/Home/Home'
-import Login from '../pages/Login/Login'
+import WorkspacesPage from '../pages/WorkspacesPage/WorkspacesPage'
+import WorkspacePage from '../pages/WorkspacePage/WorkspacePage'
+import ProfilePage from '../pages/ProfilePage/ProfilePage'
+import ViewProfilePage from '../pages/ProfilePage/ViewProfilePage'
+import InvitePage from '../pages/InvitePage/InvitePage'
+import MembersPage from '../pages/MembersPage/MembersPage'
 import Register from '../pages/Register/Register'
-import VerifyPage from '../pages/VerifyPage/VerifyPage'
+import Login from '../pages/Login/Login'
+
 interface IRoute {
   path: string
   component: any
   layout: any
 }
+
 const publicRoutes: IRoute[] = [
+  {
+    path: routes.notFound,
+    component: WorkspacesPage,
+    layout: null
+  },
   {
     path: routes.login,
     component: Login,
@@ -19,18 +29,55 @@ const publicRoutes: IRoute[] = [
     path: routes.register,
     component: Register,
     layout: null
-  },
+  }
+]
+
+const privateRoutes: IRoute[] = [
   {
-    path: routes.notFound,
-    component: null,
+    path: routes.home,
+    component: WorkspacesPage,
     layout: null
   },
   {
-    path: routes.verify,
-    component: VerifyPage,
+    path: routes.workspaces,
+    component: WorkspacesPage,
+    layout: null
+  },
+  {
+    path: routes.workspace,
+    component: WorkspacePage,
+    layout: null
+  },
+  {
+    path: routes.channel,
+    component: WorkspacePage,
+    layout: null
+  },
+  {
+    path: routes.directMessage,
+    component: WorkspacePage,
+    layout: null
+  },
+  {
+    path: routes.profile,
+    component: ProfilePage,
+    layout: null
+  },
+  {
+    path: routes.viewProfile,
+    component: ViewProfilePage,
+    layout: null
+  },
+  {
+    path: routes.invite,
+    component: InvitePage,
+    layout: null
+  },
+  {
+    path: routes.members,
+    component: MembersPage,
     layout: null
   }
 ]
-const privateRoutes: IRoute[] = []
 
 export { publicRoutes, privateRoutes }

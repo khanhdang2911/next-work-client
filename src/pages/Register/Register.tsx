@@ -1,16 +1,14 @@
-'use client'
-
-import React, { useState } from 'react'
+import type React from 'react'
+import { useState } from 'react'
 import { Card, TextInput, Label, Button, Radio } from 'flowbite-react'
 import { HiMail, HiLockClosed, HiUser } from 'react-icons/hi'
 import Google from '../../assets/icons/google.svg'
-import Microsoft from '../../assets/icons/microsoft.svg'
 import { register } from '../../api/auth.api'
 import { Link, useNavigate } from 'react-router-dom'
-import { toast } from 'react-toastify'
+import { toast, ToastContainer } from 'react-toastify'
+
 export default function Register() {
-  const [firstname, setFirstname] = useState('')
-  const [lastname, setLastname] = useState('')
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [gender, setGender] = useState('')
@@ -18,16 +16,15 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!firstname || !lastname || !email || !password || !gender) {
+    if (!name || !email || !password || !gender) {
       toast.error('Please fill all fields.')
       return
     }
-    // Implement registration logic here
+
     try {
-      const response = await register({ firstname, lastname, email, password, gender })
+      const response = await register({ name, email, password, gender })
       if (response.status === 'success') {
-        setFirstname('')
-        setLastname('')
+        setName('')
         setEmail('')
         setPassword('')
         setGender('')
@@ -43,33 +40,18 @@ export default function Register() {
       <Card className='w-full max-w-[90%] sm:max-w-md'>
         <h2 className='text-2xl font-bold text-center mb-6 text-gray-800'>Create an Account</h2>
         <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
-          <div className='grid grid-cols-2 gap-4'>
-            <div>
-              <Label htmlFor='firstname' value='First Name' className='text-sm font-medium text-gray-700' />
-              <TextInput
-                id='firstname'
-                type='text'
-                icon={HiUser}
-                placeholder='John'
-                required
-                value={firstname}
-                onChange={(e) => setFirstname(e.target.value)}
-                className='mt-1'
-              />
-            </div>
-            <div>
-              <Label htmlFor='lastname' value='Last Name' className='text-sm font-medium text-gray-700' />
-              <TextInput
-                id='lastname'
-                type='text'
-                icon={HiUser}
-                placeholder='Doe'
-                required
-                value={lastname}
-                onChange={(e) => setLastname(e.target.value)}
-                className='mt-1'
-              />
-            </div>
+          <div>
+            <Label htmlFor='name' value='Full Name' className='text-sm font-medium text-gray-700' />
+            <TextInput
+              id='name'
+              type='text'
+              icon={HiUser}
+              placeholder='John Doe'
+              required
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className='mt-1'
+            />
           </div>
           <div>
             <Label htmlFor='email' value='Email' className='text-sm font-medium text-gray-700' />
@@ -107,7 +89,6 @@ export default function Register() {
                   value='Male'
                   onChange={() => setGender('Male')}
                   checked={gender === 'Male'}
-                  className='text-blue-500 border-blue-500 focus:ring-blue-500'
                 />
                 <Label htmlFor='Male' className='ml-2'>
                   Male
@@ -120,7 +101,6 @@ export default function Register() {
                   value='Female'
                   onChange={() => setGender('Female')}
                   checked={gender === 'Female'}
-                  className='text-blue-500 border-blue-500 focus:ring-blue-500'
                 />
                 <Label htmlFor='Female' className='ml-2'>
                   Female
@@ -132,6 +112,7 @@ export default function Register() {
             Sign Up
           </Button>
         </form>
+
         <div className='mt-4'>
           <div className='relative'>
             <div className='absolute inset-0 flex items-center'>
@@ -141,24 +122,22 @@ export default function Register() {
               <span className='px-2 bg-white text-gray-500'>Or sign up with</span>
             </div>
           </div>
-          <div className='mt-6 grid grid-cols-2 gap-3'>
+          <div className='mt-6'>
             <Button color='light' className='w-full flex items-center justify-center'>
               <img className='w-4 h-4 mt-0.5 mr-1' src={Google} alt='google' />
               <p>Google</p>
             </Button>
-            <Button color='light' className='w-full flex items-center justify-center'>
-              <img className='w-5 h-5 mt-0.5 mr-1' src={Microsoft} alt='microsoft' />
-              <p>Microsoft Account</p>
-            </Button>
           </div>
         </div>
+
         <p className='mt-4 text-center text-sm text-gray-600'>
           Already have an account?
-          <Link to='/login' className='font-medium text-blue-600 hover:underline'>
+          <Link to='/login' className='font-medium text-blue-600 hover:underline ml-1'>
             Sign in
           </Link>
         </p>
       </Card>
+      <ToastContainer />
     </div>
   )
 }

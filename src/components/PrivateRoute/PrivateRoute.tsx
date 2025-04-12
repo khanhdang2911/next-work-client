@@ -1,3 +1,5 @@
+import type React from 'react'
+
 import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
 import { useEffect } from 'react'

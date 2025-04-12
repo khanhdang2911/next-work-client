@@ -1,4 +1,4 @@
-import axios, { InternalAxiosRequestConfig } from 'axios'
+import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { store } from '../redux/store'
 import { jwtDecode } from 'jwt-decode'
 import { logout, refreshToken } from '../api/auth.api'
@@ -55,11 +55,11 @@ const handleRefreshToken = async (config: InternalAxiosRequestConfig<any>) => {
 }
 // Add a request interceptor
 instance.interceptors.request.use(
-  async function (config) {
+  async (config) => {
     // Do something before request is sent
     return await handleRefreshToken(config)
   },
-  function (error) {
+  (error) => {
     // Do something with request error
     return Promise.reject(error)
   }
@@ -67,12 +67,12 @@ instance.interceptors.request.use(
 
 // Add a response interceptor
 instance.interceptors.response.use(
-  function (response) {
+  (response) => {
     // Any status code that lie within the range of 2xx cause this function to trigger
     // Do something with response data
     return response
   },
-  function (error) {
+  (error) => {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
     // Do something with response error
     return Promise.reject(error)
@@ -81,13 +81,13 @@ instance.interceptors.response.use(
 
 //Refresh token interceptor
 refreshInstance.interceptors.request.use(
-  function (config) {
+  (config) => {
     // Do something before request is sent
     const auth = store.getState().auth
     config.headers.Authorization = `Bearer ${auth.user?.accessToken}`
     return config
   },
-  function (error) {
+  (error) => {
     // Do something with request error
     return Promise.reject(error)
   }
@@ -95,12 +95,12 @@ refreshInstance.interceptors.request.use(
 
 // Add a response interceptor
 refreshInstance.interceptors.response.use(
-  function (response) {
+  (response) => {
     // Any status code that lie within the range of 2xx cause this function to trigger
     // Do something with response data
     return response
   },
-  function (error) {
+  (error) => {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
     // Do something with response error
     return Promise.reject(error)

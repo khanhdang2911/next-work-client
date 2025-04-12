@@ -1,4 +1,4 @@
-import { RootState } from '@reduxjs/toolkit/query'
+import type { RootState } from '@reduxjs/toolkit/query'
 
 const getAuthSelector = (state: RootState<any, any, any>) => {
   return state.auth

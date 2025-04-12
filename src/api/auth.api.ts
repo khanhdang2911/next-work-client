@@ -1,5 +1,5 @@
 import axios, { normalInstance, refreshInstance } from '../config/httpRequest'
-import { IUserLogin, IUserRegister } from '../interfaces/User'
+import type { IUserRegister, IUserLogin } from '../interfaces/User'
 
 const register = async (data: IUserRegister) => {
   const response = await axios.post('/auth/register', data)
