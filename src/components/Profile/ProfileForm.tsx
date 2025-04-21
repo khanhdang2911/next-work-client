@@ -8,7 +8,7 @@ import { getAuthSelector } from '../../redux/selectors'
 const ProfileForm: React.FC = () => {
   const auth: any = useSelector(getAuthSelector)
   const currentUser = auth.user
-  const [name, setName] = useState('Name of user')
+  const [name, setName] = useState(currentUser.name)
   const [email, setEmail] = useState(currentUser.email)
   const [avatar, setAvatar] = useState(currentUser.avatar)
   const [status, setStatus] = useState<'online' | 'away' | 'busy' | 'offline'>(currentUser.status)

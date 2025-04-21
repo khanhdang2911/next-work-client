@@ -54,10 +54,10 @@ const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onC
           </div>
 
           <div>
-            <Label htmlFor='workspace-icon' value='Workspace Icon (Optional)' />
+            <Label htmlFor='workspace-icon' value='Workspace description' />
             <TextInput
               id='workspace-icon'
-              placeholder='A'
+              placeholder='Company'
               value={icon}
               onChange={(e) => setIcon(e.target.value)}
               maxLength={1}
