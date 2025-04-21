@@ -1,5 +1,6 @@
 import axios, { normalInstance, refreshInstance } from '../config/httpRequest'
 import type { IUserRegister, IUserLogin } from '../interfaces/User'
+import type {IWorkspace} from '../interfaces/Workspace'
 
 const register = async (data: IUserRegister) => {
   const response = await axios.post('/auth/register', data)
@@ -8,6 +9,16 @@ const register = async (data: IUserRegister) => {
 
 const login = async (data: IUserLogin) => {
   const response = await axios.post('/auth/login', data)
+  return response.data
+}
+
+const getAllWorkspaces = async () => {
+  const response = await axios.get('/workspaces')
+  return response.data
+}
+
+const createWorkspaces = async (data: { name: string; description: string }) => {
+  const response = await axios.post('/workspaces', data)
   return response.data
 }
 
@@ -37,4 +48,4 @@ const refreshToken = async () => {
   return response.data
 }
 
-export { register, login, logout, refreshToken, loginWithAuth0 }
+export { register, login, logout, refreshToken, loginWithAuth0, getAllWorkspaces, createWorkspaces }

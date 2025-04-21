@@ -1,7 +1,7 @@
 export interface IWorkspace {
-  id: string
+  _id: string
   name: string
-  icon: string
+  description: string
   ownerId: string
   createdAt: string
   updatedAt: string

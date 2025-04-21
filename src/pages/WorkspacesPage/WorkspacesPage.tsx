@@ -1,35 +1,60 @@
 import type React from 'react'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Card, Button } from 'flowbite-react'
 import { HiPlus, HiOutlineLogout, HiUserCircle } from 'react-icons/hi'
-import { mockWorkspaces } from '../../mockData/workspaces'
 import { getInitials } from '../../utils/formatUtils'
 import CreateWorkspaceModal from '../../components/Workspace/CreateWorkspaceModal'
 import type { IWorkspace } from '../../interfaces/Workspace'
 import { useAuth0 } from '@auth0/auth0-react'
-import { logout as logoutApi } from '../../api/auth.api'
+import { createWorkspaces, getAllWorkspaces, logout as logoutApi } from '../../api/auth.api'
 import authSlice from '../../redux/authSlice'
 import { toast } from 'react-toastify'
 import { useDispatch } from 'react-redux'
+import { store } from '../../redux/store'
 
 const WorkspacesPage: React.FC = () => {
-  const [workspaces, setWorkspaces] = useState<IWorkspace[]>(mockWorkspaces)
+  const [workspaces, setWorkspaces] = useState<IWorkspace[]>([])
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
   const { logout } = useAuth0()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  const handleCreateWorkspace = (name: string, icon: string) => {
-    const newWorkspace: IWorkspace = {
-      id: `workspace${Date.now()}`,
-      name,
-      icon,
-      ownerId: 'user1',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
+  useEffect( () => {
+    const fetchWorkspaces = async () => {
+      try {
+        const res = await getAllWorkspaces()
+        if (res.status === 'success') {
+          setWorkspaces(res.data)
+        } else {
+          toast.error('Error when fetching all workspaces')
+        }
+      } catch (error) {
+        toast.error('Something went wrong')
+        console.error(error)
+      }
     }
-    setWorkspaces((prev) => [...prev, newWorkspace])
-    mockWorkspaces.push(newWorkspace)
+  
+    fetchWorkspaces()
+  }, [])
+  const handleCreateWorkspace = async (name: string, description: string) => {
+    const newWorkspace = {
+      name,
+      description,
+    }
+    try {
+      const res = await createWorkspaces(newWorkspace);
+  
+      if (res.status === 'success') {
+        const workspace_new: IWorkspace = res.data;
+        setWorkspaces((prev) => [...prev, workspace_new]);
+        setIsCreateModalOpen(false);
+        toast.success("Create workspace succeeded");
+      } else {
+        toast.error('Error when creating workspace');
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || "An unexpected error occurred");
+    }
   }
   const handleLogout = async () => {
     try {
@@ -76,10 +101,10 @@ const WorkspacesPage: React.FC = () => {
       ) : (
         <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6'>
           {workspaces.map((workspace) => (
-            <Card key={workspace.id} className='hover:shadow-lg transition-shadow'>
+            <Card key={workspace._id} className='hover:shadow-lg transition-shadow'>
               <div className='flex items-center'>
                 <div className='w-12 h-12 rounded-md flex items-center justify-center text-white font-bold text-lg bg-blue-600 mr-4'>
-                  {workspace.icon || getInitials(workspace.name)}
+                  {getInitials(workspace.name)}
                 </div>
                 <div>
                   <h2 className='text-xl font-bold'>{workspace.name}</h2>
@@ -88,7 +113,7 @@ const WorkspacesPage: React.FC = () => {
               </div>
 
               <div className='mt-4'>
-                <Link to={`/workspace/${workspace.id}`}>
+                <Link to={`/workspace/${workspace._id}`}>
                   <Button color='blue' className='w-full'>
                     Open Workspace
                   </Button>
