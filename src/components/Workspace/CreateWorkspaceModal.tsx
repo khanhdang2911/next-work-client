@@ -12,7 +12,7 @@ interface CreateWorkspaceModalProps {
 
 const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onClose, onCreateWorkspace }) => {
   const [name, setName] = useState('')
-  const [icon, setIcon] = useState('')
+  const [description, setDescription] = useState('')
   const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -24,13 +24,13 @@ const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onC
     }
 
     // Generate icon from name if not provided
-    const finalIcon = icon.trim() || name.charAt(0).toUpperCase()
+    //const finalIcon = icon.trim() || name.charAt(0).toUpperCase()
 
-    onCreateWorkspace(name, finalIcon)
+    onCreateWorkspace(name, description)
 
     // Reset form
     setName('')
-    setIcon('')
+    setDescription('')
     setError('')
     onClose()
   }
@@ -44,7 +44,7 @@ const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onC
             <Label htmlFor='workspace-name' value='Workspace Name' />
             <TextInput
               id='workspace-name'
-              placeholder='Acme Inc'
+              placeholder='Input your Workspace name'
               value={name}
               onChange={(e) => setName(e.target.value)}
               required
@@ -54,13 +54,12 @@ const CreateWorkspaceModal: React.FC<CreateWorkspaceModalProps> = ({ isOpen, onC
           </div>
 
           <div>
-            <Label htmlFor='workspace-icon' value='Workspace description' />
+            <Label htmlFor='workspace-description' value='Workspace description' />
             <TextInput
-              id='workspace-icon'
-              placeholder='Company'
-              value={icon}
-              onChange={(e) => setIcon(e.target.value)}
-              maxLength={1}
+              id='workspace-description'
+              placeholder='Description'
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
               helperText='Enter a single character to use as the workspace icon'
             />
           </div>
