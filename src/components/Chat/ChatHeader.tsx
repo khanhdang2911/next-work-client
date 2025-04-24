@@ -1,6 +1,6 @@
 import type React from 'react'
 import { Button, Tooltip } from 'flowbite-react'
-import { HiHashtag, HiInformationCircle, HiPhone, HiVideoCamera, HiUserAdd, HiSearch, HiUsers } from 'react-icons/hi'
+import { HiHashtag, HiLockClosed, HiInformationCircle, HiPhone, HiVideoCamera, HiUserAdd, HiSearch, HiUsers } from 'react-icons/hi'
 import type { IChannel } from '../../interfaces/Workspace'
 import type { IUser } from '../../interfaces/User'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -27,8 +27,13 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessageUser }) =
       <div className='flex-1'>
         {channel && (
           <div className='flex items-center'>
-            <HiHashtag className='h-5 w-5 text-gray-500 mr-2' />
-            <h2 className='font-semibold'>{channel.name}</h2>
+            {channel.isPrivate ? (
+                <HiLockClosed className="mr-2 h-4 w-4" />
+              ) : (
+                <HiHashtag className="mr-2 h-4 w-4" />
+              )
+            }
+            <h2 className='font-semibold'>{channel.name || "Nho sua lai Header"}</h2>
             {channel.description && <span className='ml-2 text-gray-500 text-sm'>{channel.description}</span>}
           </div>
         )}
@@ -40,7 +45,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessageUser }) =
               alt={directMessageUser.name}
               className='w-5 h-5 rounded-full mr-2'
             />
-            <h2 className='font-semibold'>{directMessageUser.name}</h2>
+            <h2 className='font-semibold'>{directMessageUser.name || "Nho sua lai Header"}</h2>
             <span
               className={`ml-2 w-2 h-2 rounded-full ${
                 directMessageUser.status === 'online'

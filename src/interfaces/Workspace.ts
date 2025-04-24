@@ -8,7 +8,7 @@ export interface IWorkspace {
 }
 
 export interface IChannel {
-  id: string
+  _id: string
   name: string
   workspaceId: string
   description?: string
@@ -16,19 +16,24 @@ export interface IChannel {
   createdAt: string
   updatedAt: string
   unreadCount?: number
+  conversationId: string
+}
+
+export interface ISender {
+  _id: string
+  name: string
+  avatar: string
 }
 
 export interface IMessage {
-  id: string
+  _id: string
   content: string
-  userId: string
-  channelId?: string
-  workspaceId: string
-  directMessageId?: string
-  createdAt: string
-  updatedAt: string
+  senderId: ISender
+  conversationId: string
   reactions?: IReaction[]
   attachments?: IAttachment[]
+  createdAt: string
+  updatedAt: string
   isEdited?: boolean
 }
 
@@ -50,10 +55,9 @@ export interface IAttachment {
 }
 
 export interface IDirectMessage {
-  id: string
-  participants: string[]
-  workspaceId: string
-  createdAt: string
-  updatedAt: string
+  _id: string
+  name: string
+  avatar: string
   unreadCount?: number
+  conversationId: string
 }

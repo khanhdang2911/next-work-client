@@ -3,26 +3,44 @@ import { useParams, Navigate } from 'react-router-dom'
 import WorkspaceList from '../../components/Workspace/WorkspaceList'
 import WorkspaceSidebar from '../../components/Sidebar/WorkspaceSidebar'
 import ChatArea from '../../components/Chat/ChatArea'
-import { getWorkspaceById, getChannelsByWorkspaceId } from '../../mockData/workspaces'
+import { useState, useEffect } from 'react'
+import { getChannelsByWorkspaceId } from '../../api/auth.api'
+import { toast } from 'react-toastify'
+import { IChannel } from '../../interfaces/Workspace'
+import { ErrorMessage } from '../../config/constants'
 
 const WorkspacePage: React.FC = () => {
-  const { workspaceId, channelId, directMessageId } = useParams<{
+  const { workspaceId, conversationId } = useParams<{
     workspaceId: string
-    channelId: string
-    directMessageId: string
+    conversationId: string
   }>()
+  const [channels, setChannels] = useState<IChannel[]>([])
 
-  const workspace = getWorkspaceById(workspaceId || '')
+  useEffect( () => {
+    const fetchChannel = async () => {
+      try {
+        const res = await getChannelsByWorkspaceId(workspaceId!);
+        if(res.status === 'success'){
+          setChannels(res.data)
+        } 
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || ErrorMessage);
+      }
+    } 
 
-  if (!workspace) {
-    return <Navigate to='/workspaces' />
-  }
+    fetchChannel()
+  }, [])
+
+  // const workspace = getWorkspaceById(workspaceId || '')
+
+  // if (!workspace) {
+  //   return <Navigate to='/workspaces' />
+  // }
 
   // If no channel or DM is selected, redirect to the first channel
-  if (!channelId && !directMessageId) {
-    const channels = getChannelsByWorkspaceId(workspaceId || '')
+  if (!conversationId) {
     if (channels.length > 0) {
-      return <Navigate to={`/workspace/${workspaceId}/channel/${channels[0].id}`} />
+      return <Navigate to={`/workspace/${workspaceId}/channel/${channels[0].conversationId}`} />
     }
   }
 
