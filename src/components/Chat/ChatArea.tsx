@@ -6,13 +6,13 @@ import MessageItem from './MessageItem'
 import MessageInput from './MessageInput'
 import {
   getChannelById,
-  getMessagesByChannelId,
-  getUserById,
   getDirectMessageById,
-  getMessagesByDirectMessageId,
   getDirectMessageParticipants
 } from '../../mockData/workspaces'
 import type { IMessage, IAttachment } from '../../interfaces/Workspace'
+import { getMessagebyConversationId } from '../../api/auth.api' 
+import { toast } from 'react-toastify'
+import { ErrorMessage } from '../../config/constants'
 
 const ChatArea: React.FC = () => {
   const { channelId, directMessageId } = useParams<{ channelId: string; directMessageId: string }>()
@@ -27,27 +27,32 @@ const ChatArea: React.FC = () => {
   const directMessageUser = useMemo(() => {
     if (!directMessageId) return undefined
     const participants = getDirectMessageParticipants(directMessageId)
-    return participants.find((user) => user.id !== 'user1')
+    return participants.find((user) => user._id !== 'user1')
   }, [directMessageId])
 
+  const { workspaceId, conversationId } = useParams<{ workspaceId:string, conversationId: string }>()
   useEffect(() => {
-    if (channelId) {
-      setMessages(getMessagesByChannelId(channelId))
-    } else if (directMessageId) {
-      setMessages(getMessagesByDirectMessageId(directMessageId))
+    const fetchMessagebyConversationId = async () => {
+      try {
+        const res = await getMessagebyConversationId(conversationId!)
+        if(res.status === 'success') {
+          setMessages(res.data)
+        }
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || ErrorMessage);
+      }
     }
-    setEditingMessageId(null)
-  }, [channelId, directMessageId])
+
+    fetchMessagebyConversationId()
+  }, [conversationId])
 
   const handleSendMessage = useCallback(
     (content: string) => {
       const newMessage: IMessage = {
-        id: `message${Date.now()}`,
+        _id: `message${Date.now()}`,
         content,
-        userId: 'user1',
-        channelId: channelId,
-        directMessageId: directMessageId,
-        workspaceId: '1',
+        senderId: 'user1',
+        conversationId: conversationId!,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         reactions: []
@@ -95,7 +100,7 @@ const ChatArea: React.FC = () => {
     (content: string) => {
       setMessages((prev) =>
         prev.map((message) =>
-          message.id === editingMessageId
+          message._id === editingMessageId
             ? {
                 ...message,
                 content,
@@ -111,13 +116,13 @@ const ChatArea: React.FC = () => {
   )
 
   const handleDeleteMessage = useCallback((messageId: string) => {
-    setMessages((prev) => prev.filter((message) => message.id !== messageId))
+    setMessages((prev) => prev.filter((message) => message._id !== messageId))
   }, [])
 
   const handleReactToMessage = useCallback((messageId: string, emoji: string) => {
     setMessages((prev) =>
       prev.map((message) => {
-        if (message.id !== messageId) return message
+        if (message._id !== messageId) return message
 
         const existingReaction = message.reactions?.find((r) => r.emoji === emoji)
 
@@ -179,7 +184,7 @@ const ChatArea: React.FC = () => {
 
   const editingMessage = useMemo(() => {
     if (!editingMessageId) return null
-    return messages.find((message) => message.id === editingMessageId)
+    return messages.find((message) => message._id === editingMessageId)
   }, [editingMessageId, messages])
 
   return (
@@ -189,14 +194,14 @@ const ChatArea: React.FC = () => {
       <div className='flex-1 overflow-y-auto'>
         <div className='py-4'>
           {messages.map((message) => {
-            const user = getUserById(message.userId)
-            if (!user) return null
+            // const user = getUserById(message.userId)
+            // if (!user) return null
 
-            if (editingMessageId === message.id) {
+            if (editingMessageId === message._id) {
               return (
-                <div key={message.id} className='py-2 px-4'>
+                <div key={message._id} className='py-2 px-4'>
                   <div className='flex items-center mb-2'>
-                    <span className='font-semibold'>{user.name}</span>
+                    <span className='font-semibold'>{message.senderId.name}</span>
                   </div>
                   <MessageInput
                     onSendMessage={handleUpdateMessage}
@@ -210,9 +215,9 @@ const ChatArea: React.FC = () => {
 
             return (
               <MessageItem
-                key={message.id}
+                key={message._id}
                 message={message}
-                user={user}
+                user={message.senderId}
                 onEdit={handleEditMessage}
                 onDelete={handleDeleteMessage}
                 onReact={handleReactToMessage}

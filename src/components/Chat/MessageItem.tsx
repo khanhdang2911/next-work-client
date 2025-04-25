@@ -2,14 +2,14 @@ import React, { useState, useMemo, useRef } from 'react'
 import { Avatar, Button, Dropdown } from 'flowbite-react'
 import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiDownload, HiUser } from 'react-icons/hi'
 import { formatTime } from '../../utils/formatUtils'
-import type { IMessage } from '../../interfaces/Workspace'
+import type { IMessage, ISender } from '../../interfaces/Workspace'
 import type { IUser } from '../../interfaces/User'
 import EmojiPicker from './EmojiPicker'
 import { useNavigate } from 'react-router-dom'
 
 interface MessageItemProps {
   message: IMessage
-  user: IUser
+  user: ISender
   onEdit: (messageId: string) => void
   onDelete: (messageId: string) => void
   onReact: (messageId: string, emoji: string) => void
@@ -33,7 +33,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       return content
     }, [message.content])
 
-    const isCurrentUser = user.id === 'user1'
+    const isCurrentUser = user._id === 'user1'
     const messageTime = formatTime(message.createdAt)
 
     const handleReactionClick = (e: React.MouseEvent) => {
@@ -42,13 +42,13 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     }
 
     const handleEmojiSelect = (emoji: string) => {
-      onReact(message.id, emoji)
+      onReact(message._id, emoji)
       setShowEmojiPicker(false)
     }
 
     const handleViewProfile = () => {
-      if (user.id !== 'user1') {
-        navigate(`/profile/${user.id}`)
+      if (user._id !== 'user1') {
+        navigate(`/profile/${user._id}`)
       } else {
         navigate('/profile')
       }
@@ -61,7 +61,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         onMouseLeave={() => setShowActions(false)}
       >
         <div className='cursor-pointer' onClick={handleViewProfile}>
-          <Avatar img={user.avatar} rounded size='md' className='mr-3' />
+          <Avatar img={user.avatar || '/favicon.svg' } rounded size='md' className='mr-3' />
         </div>
 
         <div className='flex-1'>
@@ -98,10 +98,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
 
                 {isCurrentUser && (
                   <>
-                    <Button color='gray' pill size='xs' className='p-1 mr-1' onClick={() => onEdit(message.id)}>
+                    <Button color='gray' pill size='xs' className='p-1 mr-1' onClick={() => onEdit(message._id)}>
                       <HiPencil className='h-3 w-3' />
                     </Button>
-                    <Button color='gray' pill size='xs' className='p-1' onClick={() => onDelete(message.id)}>
+                    <Button color='gray' pill size='xs' className='p-1' onClick={() => onDelete(message._id)}>
                       <HiTrash className='h-3 w-3' />
                     </Button>
                   </>
@@ -124,10 +124,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                   </Dropdown.Item>
                   {isCurrentUser && (
                     <>
-                      <Dropdown.Item icon={HiPencil} onClick={() => onEdit(message.id)}>
+                      <Dropdown.Item icon={HiPencil} onClick={() => onEdit(message._id)}>
                         Edit Message
                       </Dropdown.Item>
-                      <Dropdown.Item icon={HiTrash} onClick={() => onDelete(message.id)}>
+                      <Dropdown.Item icon={HiTrash} onClick={() => onDelete(message._id)}>
                         Delete Message
                       </Dropdown.Item>
                     </>
@@ -170,7 +170,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                 <button
                   key={reaction.id}
                   className='inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 hover:bg-gray-200'
-                  onClick={() => onReact(message.id, reaction.emoji)}
+                  onClick={() => onReact(message._id, reaction.emoji)}
                 >
                   <span className='mr-1'>{reaction.emoji}</span>
                   <span>{reaction.count}</span>

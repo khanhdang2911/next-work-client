@@ -22,6 +22,21 @@ const createWorkspaces = async (data: { name: string; description: string }) => 
   return response.data
 }
 
+const getChannelsByWorkspaceId = async (_id: string) => {
+  const response = await axios.get(`/channels/${_id}`)
+  return response.data
+}
+
+const getAllDmConversationsOfUser = async () => {
+  const response = await axios.get('/conversations/dm')
+  return response.data
+}
+
+const getMessagebyConversationId = async (conversationId: string) => {
+  const response = await axios.get(`/messages/${conversationId}`)
+  return response.data
+}
+
 const loginWithAuth0 = async (data: any, accessToken: string) => {
   const response = await normalInstance.post('/auth/login-auth0', data, {
     headers: {
@@ -48,4 +63,15 @@ const refreshToken = async () => {
   return response.data
 }
 
-export { register, login, logout, refreshToken, loginWithAuth0, getAllWorkspaces, createWorkspaces }
+export { 
+  register, 
+  login, 
+  logout, 
+  refreshToken, 
+  loginWithAuth0, 
+  getAllWorkspaces, 
+  createWorkspaces, 
+  getChannelsByWorkspaceId,
+  getAllDmConversationsOfUser,
+  getMessagebyConversationId
+}

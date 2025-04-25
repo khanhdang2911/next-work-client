@@ -12,6 +12,7 @@ import authSlice from '../../redux/authSlice'
 import { toast } from 'react-toastify'
 import { useDispatch } from 'react-redux'
 import { store } from '../../redux/store'
+import { ErrorMessage } from '../../config/constants'
 
 const WorkspacesPage: React.FC = () => {
   const [workspaces, setWorkspaces] = useState<IWorkspace[]>([])
@@ -49,11 +50,9 @@ const WorkspacesPage: React.FC = () => {
         setWorkspaces((prev) => [...prev, workspace_new]);
         setIsCreateModalOpen(false);
         toast.success("Create workspace succeeded");
-      } else {
-        toast.error('Error when creating workspace');
-      }
+      } 
     } catch (error: any) {
-      toast.error(error.response?.data?.message || "An unexpected error occurred");
+      toast.error(error.response?.data?.message || ErrorMessage );
     }
   }
   const handleLogout = async () => {
