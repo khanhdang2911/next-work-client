@@ -1,1 +1,1 @@
-export const ErrorMessage = "An unexpected error occurred"
+export const ErrorMessage = 'An unexpected error occurred'

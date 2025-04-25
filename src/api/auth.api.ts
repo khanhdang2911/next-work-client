@@ -1,6 +1,5 @@
 import axios, { normalInstance, refreshInstance } from '../config/httpRequest'
 import type { IUserRegister, IUserLogin } from '../interfaces/User'
-import type {IWorkspace} from '../interfaces/Workspace'
 
 const register = async (data: IUserRegister) => {
   const response = await axios.post('/auth/register', data)
@@ -63,14 +62,14 @@ const refreshToken = async () => {
   return response.data
 }
 
-export { 
-  register, 
-  login, 
-  logout, 
-  refreshToken, 
-  loginWithAuth0, 
-  getAllWorkspaces, 
-  createWorkspaces, 
+export {
+  register,
+  login,
+  logout,
+  refreshToken,
+  loginWithAuth0,
+  getAllWorkspaces,
+  createWorkspaces,
   getChannelsByWorkspaceId,
   getAllDmConversationsOfUser,
   getMessagebyConversationId

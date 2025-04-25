@@ -5,6 +5,7 @@ import { HiPaperClip, HiEmojiHappy, HiCode, HiAtSymbol, HiPaperAirplane } from '
 import { HiListBullet } from 'react-icons/hi2'
 import EmojiPicker from './EmojiPicker'
 import FileUploadModal from './FileUploadModal'
+import { useParams } from 'react-router-dom'
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void
@@ -25,12 +26,51 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showFileUploadModal, setShowFileUploadModal] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
+  const { conversationId, workspaceId } = useParams<{ conversationId: string; workspaceId: string }>()
+  const [currentChannel, setCurrentChannel] = useState<any>(null)
+  const [currentDirectMessage, setCurrentDirectMessage] = useState<any>(null)
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
       textareaRef.current.focus()
     }
   }, [isEditing])
+
+  // Fetch current channel or DM details for placeholder text
+  useEffect(() => {
+    const fetchCurrentConversation = async () => {
+      if (!workspaceId || !conversationId) return
+
+      try {
+        // Try to fetch channel first
+        const channelRes = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/channels/${workspaceId}`)
+        const channelData = await channelRes.json()
+
+        if (channelData.status === 'success') {
+          const channel = channelData.data.find((ch: any) => ch.conversationId === conversationId)
+          if (channel) {
+            setCurrentChannel(channel)
+            return
+          }
+        }
+
+        // If not a channel, try to fetch direct message
+        const dmRes = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/conversations/dm`)
+        const dmData = await dmRes.json()
+
+        if (dmData.status === 'success') {
+          const dm = dmData.data.find((dm: any) => dm.conversationId === conversationId)
+          if (dm) {
+            setCurrentDirectMessage(dm)
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching conversation details:', error)
+      }
+    }
+
+    fetchCurrentConversation()
+  }, [workspaceId, conversationId])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -95,6 +135,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }
 
+  const getPlaceholderText = () => {
+    if (currentChannel) {
+      return `Message #${currentChannel.name}`
+    } else if (currentDirectMessage) {
+      return `Message ${currentDirectMessage.name}`
+    }
+    return 'Type a message...'
+  }
+
   return (
     <form onSubmit={handleSubmit} className='border-t p-3 relative'>
       <div className='flex items-center space-x-2 mb-2'>
@@ -133,7 +182,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <textarea
           ref={textareaRef}
           className='flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none'
-          placeholder='Message #general'
+          placeholder={getPlaceholderText()}
           rows={1}
           value={message}
           onChange={(e) => setMessage(e.target.value)}

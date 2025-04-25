@@ -1,21 +1,34 @@
 import type React from 'react'
+import { useState } from 'react'
 import { Button, Tooltip } from 'flowbite-react'
-import { HiHashtag, HiLockClosed, HiInformationCircle, HiPhone, HiVideoCamera, HiUserAdd, HiSearch, HiUsers } from 'react-icons/hi'
-import type { IChannel } from '../../interfaces/Workspace'
+import {
+  HiHashtag,
+  HiLockClosed,
+  HiInformationCircle,
+  HiPhone,
+  HiVideoCamera,
+  HiUserAdd,
+  HiSearch,
+  HiUsers
+} from 'react-icons/hi'
+import type { IChannel, IDirectMessage } from '../../interfaces/Workspace'
 import type { IUser } from '../../interfaces/User'
 import { useNavigate, useParams } from 'react-router-dom'
+import ChannelMembersModal from './ChannelMembersModal'
 
 interface ChatHeaderProps {
-  channel?: IChannel
+  channel?: IChannel | null
+  directMessage?: IDirectMessage | null
   directMessageUser?: IUser
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessageUser }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directMessageUser }) => {
   const navigate = useNavigate()
   const { workspaceId } = useParams<{ workspaceId: string }>()
+  const [showMembersModal, setShowMembersModal] = useState(false)
 
   const handleViewMembers = () => {
-    navigate(`/workspace/${workspaceId}/members`)
+    setShowMembersModal(true)
   }
 
   const handleInviteMembers = () => {
@@ -27,25 +40,33 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessageUser }) =
       <div className='flex-1'>
         {channel && (
           <div className='flex items-center'>
-            {channel.isPrivate ? (
-                <HiLockClosed className="mr-2 h-4 w-4" />
-              ) : (
-                <HiHashtag className="mr-2 h-4 w-4" />
-              )
-            }
-            <h2 className='font-semibold'>{channel.name || "Nho sua lai Header"}</h2>
+            {channel.isPrivate ? <HiLockClosed className='mr-2 h-4 w-4' /> : <HiHashtag className='mr-2 h-4 w-4' />}
+            <h2 className='font-semibold'>{channel.name}</h2>
             {channel.description && <span className='ml-2 text-gray-500 text-sm'>{channel.description}</span>}
           </div>
         )}
 
-        {directMessageUser && (
+        {directMessage && (
+          <div className='flex items-center'>
+            <img
+              src={directMessage.avatar || '/placeholder.svg'}
+              alt={directMessage.name}
+              className='w-5 h-5 rounded-full mr-2'
+            />
+            <h2 className='font-semibold'>{directMessage.name}</h2>
+            <span className={`ml-2 w-2 h-2 rounded-full bg-green-500`}></span>
+            <span className='ml-1 text-gray-500 text-sm'>online</span>
+          </div>
+        )}
+
+        {!channel && !directMessage && directMessageUser && (
           <div className='flex items-center'>
             <img
               src={directMessageUser.avatar || '/placeholder.svg'}
               alt={directMessageUser.name}
               className='w-5 h-5 rounded-full mr-2'
             />
-            <h2 className='font-semibold'>{directMessageUser.name || "Nho sua lai Header"}</h2>
+            <h2 className='font-semibold'>{directMessageUser.name}</h2>
             <span
               className={`ml-2 w-2 h-2 rounded-full ${
                 directMessageUser.status === 'online'
@@ -99,6 +120,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessageUser }) =
           </Button>
         </Tooltip>
       </div>
+
+      <ChannelMembersModal isOpen={showMembersModal} onClose={() => setShowMembersModal(false)} />
     </div>
   )
 }

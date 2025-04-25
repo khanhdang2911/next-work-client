@@ -11,7 +11,6 @@ import { createWorkspaces, getAllWorkspaces, logout as logoutApi } from '../../a
 import authSlice from '../../redux/authSlice'
 import { toast } from 'react-toastify'
 import { useDispatch } from 'react-redux'
-import { store } from '../../redux/store'
 import { ErrorMessage } from '../../config/constants'
 
 const WorkspacesPage: React.FC = () => {
@@ -20,7 +19,7 @@ const WorkspacesPage: React.FC = () => {
   const { logout } = useAuth0()
   const navigate = useNavigate()
   const dispatch = useDispatch()
-  useEffect( () => {
+  useEffect(() => {
     const fetchWorkspaces = async () => {
       try {
         const res = await getAllWorkspaces()
@@ -34,25 +33,25 @@ const WorkspacesPage: React.FC = () => {
         console.error(error)
       }
     }
-  
+
     fetchWorkspaces()
   }, [])
   const handleCreateWorkspace = async (name: string, description: string) => {
     const newWorkspace = {
       name,
-      description,
+      description
     }
     try {
-      const res = await createWorkspaces(newWorkspace);
-  
+      const res = await createWorkspaces(newWorkspace)
+
       if (res.status === 'success') {
-        const workspace_new: IWorkspace = res.data;
-        setWorkspaces((prev) => [...prev, workspace_new]);
-        setIsCreateModalOpen(false);
-        toast.success("Create workspace succeeded");
-      } 
+        const workspace_new: IWorkspace = res.data
+        setWorkspaces((prev) => [...prev, workspace_new])
+        setIsCreateModalOpen(false)
+        toast.success('Create workspace succeeded')
+      }
     } catch (error: any) {
-      toast.error(error.response?.data?.message || ErrorMessage );
+      toast.error(error.response?.data?.message || ErrorMessage)
     }
   }
   const handleLogout = async () => {

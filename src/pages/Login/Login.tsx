@@ -9,7 +9,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import Google from '../../assets/icons/google.svg'
 import LoadingOverlay from '../../components/LoadingPage/Loading'
-import { toast, ToastContainer } from 'react-toastify'
+import { toast } from 'react-toastify'
 import { getAuthSelector } from '../../redux/selectors'
 import ToastCustom from '../../components/ToastCustom.tsx/ToastCustom'
 
