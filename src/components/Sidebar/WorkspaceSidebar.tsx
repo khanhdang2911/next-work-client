@@ -1,20 +1,14 @@
 import type React from 'react'
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button } from 'flowbite-react'
 import { HiChevronDown, HiChevronRight, HiPlus } from 'react-icons/hi'
 import ChannelItem from './ChannelItem'
 import DirectMessageItem from './DirectMessageItem'
 import CreateChannelModal from './CreateChannelModal'
-import {
-  getWorkspaceById,
-  getDirectMessagesByWorkspaceId,
-  getUserById,
-  mockChannels
-} from '../../mockData/workspaces'
-import { getChannelsByWorkspaceId, getAllDmConversationsOfUser } from '../../api/auth.api'
+import { getChannelsByWorkspaceId, getAllDmConversationsOfUser, getAllWorkspaces } from '../../api/auth.api'
 import { toast } from 'react-toastify'
-import type { IChannel, IDirectMessage } from '../../interfaces/Workspace'
+import type { IChannel, IDirectMessage, IWorkspace } from '../../interfaces/Workspace'
 import { ErrorMessage } from '../../config/constants'
 
 const WorkspaceSidebar: React.FC = () => {
@@ -24,73 +18,99 @@ const WorkspaceSidebar: React.FC = () => {
   const [isCreateChannelModalOpen, setIsCreateChannelModalOpen] = useState(false)
   const [channels, setChannels] = useState<IChannel[]>([])
   const [alldm, setAlldm] = useState<IDirectMessage[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [workspace, setWorkspace] = useState<IWorkspace | null>(null)
+  const createChannelBtnRef = useRef<HTMLButtonElement>(null)
+
+  // Fetch workspace details to get the name
+  useEffect(() => {
+    const fetchWorkspaceDetails = async () => {
+      if (!workspaceId) return
+
+      try {
+        const res = await getAllWorkspaces()
+        if (res.status === 'success') {
+          const currentWorkspace = res.data.find((ws: IWorkspace) => ws._id === workspaceId)
+          if (currentWorkspace) {
+            setWorkspace(currentWorkspace)
+          }
+        }
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    }
+
+    fetchWorkspaceDetails()
+  }, [workspaceId])
 
   useEffect(() => {
     const fetchChannels = async () => {
+      if (!workspaceId) return
+
+      setIsLoading(true)
       try {
-        const res = await getChannelsByWorkspaceId(workspaceId!);
-        if(res.status === 'success'){
+        const res = await getChannelsByWorkspaceId(workspaceId)
+        if (res.status === 'success') {
           setChannels(res.data)
-        } 
+        }
       } catch (error: any) {
-        toast.error(error.response?.data?.message || ErrorMessage );
+        toast.error(error.response?.data?.message || ErrorMessage)
+      } finally {
+        setIsLoading(false)
       }
-    } 
+    }
 
     fetchChannels()
   }, [workspaceId])
-  
+
   useEffect(() => {
     const fetchAllDm = async () => {
       try {
-        const res = await getAllDmConversationsOfUser();
-        if(res.status === 'success'){
+        console.log('Fetching all DMs for workspace:', workspaceId)
+        const res = await getAllDmConversationsOfUser()
+        if (res.status === 'success') {
+          console.log('DMs fetched successfully:', res.data)
           setAlldm(res.data)
-        } 
+        }
       } catch (error: any) {
-        toast.error(error.response?.data?.message || ErrorMessage );
+        console.error('Error fetching DMs:', error)
+        toast.error(error.response?.data?.message || ErrorMessage)
       }
-    } 
+    }
 
     fetchAllDm()
   }, [workspaceId])
-  // const workspace = useMemo(() => {
-  //   return getWorkspaceById(workspaceId || '')
-  // }, [workspaceId])
 
-  // const directMessages = useMemo(() => {
-  //   return getDirectMessagesByWorkspaceId(workspaceId || '')
-  // }, [workspaceId])
+  const handleCreateChannel = async (name: string, description: string, isPrivate: boolean) => {
+    try {
+      // In a real app, you would make an API call here
+      // For now, let's simulate adding a channel locally
+      const newChannel: IChannel = {
+        _id: `channel${Date.now()}`,
+        name,
+        workspaceId: workspaceId || '',
+        description,
+        isPrivate,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        unreadCount: 0,
+        conversationId: `conv${Date.now()}`
+      }
 
-  const handleCreateChannel = (name: string, description: string, isPrivate: boolean) => {
-    // const newChannel: IChannel = {
-    //   _id: `channel${Date.now()}`,
-    //   name,
-    //   workspaceId: workspaceId || '',
-    //   description,
-    //   isPrivate,
-    //   createdAt: new Date().toISOString(),
-    //   updatedAt: new Date().toISOString(),
-    //   unreadCount: 0
-    // }
-
-    // // Add to local state
-    // setChannels((prev) => [...prev, newChannel])
-
-    // // In a real app, you would also add this to your backend
-    // mockChannels.push(newChannel)
+      // Add to local state
+      setChannels((prev) => [...prev, newChannel])
+      toast.success('Channel created successfully!')
+      setIsCreateChannelModalOpen(false)
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create channel')
+    }
   }
-
-  // if (!workspace) {
-  //   return <div>Workspace not found</div>
-  // }
 
   return (
     <div className='w-64 bg-gray-900 h-screen flex flex-col'>
       <div className='p-4 border-b border-gray-700'>
         <h1 className='text-white font-bold text-lg flex items-center'>
-          {/* {workspace.name} */}
-          Learning Reactjs
+          {workspace ? workspace.name : 'Loading workspace...'}
           <span className='ml-auto text-gray-400 text-xs'>Y</span>
         </h1>
       </div>
@@ -108,6 +128,8 @@ const WorkspaceSidebar: React.FC = () => {
             )}
             <span className='text-sm font-medium'>CHANNELS</span>
             <Button
+              id='create-channel-btn'
+              ref={createChannelBtnRef}
               color='gray'
               size='xs'
               pill
@@ -123,9 +145,13 @@ const WorkspaceSidebar: React.FC = () => {
           </div>
           {channelsExpanded && (
             <div className='mt-2 space-y-1'>
-              {channels.map((channel) => (
-                <ChannelItem key={channel._id} channel={channel} />
-              ))}
+              {isLoading ? (
+                <div className='px-4 py-2 text-gray-400 text-sm'>Loading channels...</div>
+              ) : channels.length > 0 ? (
+                channels.map((channel) => <ChannelItem key={channel._id} channel={channel} />)
+              ) : (
+                <div className='px-4 py-2 text-gray-400 text-sm'>No channels found</div>
+              )}
             </div>
           )}
         </div>
@@ -147,11 +173,11 @@ const WorkspaceSidebar: React.FC = () => {
           </div>
           {directMessagesExpanded && (
             <div className='mt-2 space-y-1'>
-              {alldm.map((dm) => {
-                // Find the other user in the direct message
-                
-                return <DirectMessageItem key={dm._id} directMessage={dm}/>
-              })}
+              {alldm.length > 0 ? (
+                alldm.map((dm) => <DirectMessageItem key={dm.conversationId} directMessage={dm} />)
+              ) : (
+                <div className='px-4 py-2 text-gray-400 text-sm'>No direct messages</div>
+              )}
             </div>
           )}
         </div>

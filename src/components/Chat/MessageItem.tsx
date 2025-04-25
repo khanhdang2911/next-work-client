@@ -3,7 +3,6 @@ import { Avatar, Button, Dropdown } from 'flowbite-react'
 import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiDownload, HiUser } from 'react-icons/hi'
 import { formatTime } from '../../utils/formatUtils'
 import type { IMessage, ISender } from '../../interfaces/Workspace'
-import type { IUser } from '../../interfaces/User'
 import EmojiPicker from './EmojiPicker'
 import { useNavigate } from 'react-router-dom'
 
@@ -54,6 +53,11 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       }
     }
 
+    // Check if a file is an image
+    const isImageFile = (type: string) => {
+      return type.startsWith('image/')
+    }
+
     return (
       <div
         className='py-2 px-4 hover:bg-gray-100 flex relative'
@@ -61,7 +65,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         onMouseLeave={() => setShowActions(false)}
       >
         <div className='cursor-pointer' onClick={handleViewProfile}>
-          <Avatar img={user.avatar || '/favicon.svg' } rounded size='md' className='mr-3' />
+          <Avatar img={user.avatar || '/favicon.svg'} rounded size='md' className='mr-3' />
         </div>
 
         <div className='flex-1'>
@@ -140,25 +144,47 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
           <div className='mt-1 text-sm' dangerouslySetInnerHTML={{ __html: formattedContent }} />
 
           {message.attachments && message.attachments.length > 0 && (
-            <div className='mt-2 border border-gray-200 rounded-md p-3 bg-gray-50 inline-block'>
+            <div className='mt-2'>
               {message.attachments.map((attachment) => (
-                <div key={attachment.id} className='flex items-center'>
-                  <div className='mr-3 text-blue-500'>
-                    <svg className='h-8 w-8' fill='currentColor' viewBox='0 0 20 20'>
-                      <path
-                        fillRule='evenodd'
-                        d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z'
-                        clipRule='evenodd'
+                <div key={attachment.id} className='mt-2'>
+                  {isImageFile(attachment.type) ? (
+                    // Display images directly
+                    <div className='mt-2'>
+                      <img
+                        src={attachment.url || '/placeholder.svg'}
+                        alt={attachment.name}
+                        className='max-w-md rounded-md border border-gray-200'
+                        style={{ maxHeight: '300px' }}
                       />
-                    </svg>
-                  </div>
-                  <div className='flex-1'>
-                    <div className='text-sm font-medium'>{attachment.name}</div>
-                    <div className='text-xs text-gray-500'>{attachment.size}</div>
-                  </div>
-                  <Button color='gray' size='xs' pill>
-                    <HiDownload className='h-3 w-3' />
-                  </Button>
+                      <div className='mt-1 text-xs text-gray-500'>
+                        {attachment.name} ({attachment.size})
+                      </div>
+                    </div>
+                  ) : (
+                    // Display other files as downloadable items
+                    <div className='border border-gray-200 rounded-md p-3 bg-gray-50 inline-block'>
+                      <div className='flex items-center'>
+                        <div className='mr-3 text-blue-500'>
+                          <svg className='h-8 w-8' fill='currentColor' viewBox='0 0 20 20'>
+                            <path
+                              fillRule='evenodd'
+                              d='M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z'
+                              clipRule='evenodd'
+                            />
+                          </svg>
+                        </div>
+                        <div className='flex-1'>
+                          <div className='text-sm font-medium'>{attachment.name}</div>
+                          <div className='text-xs text-gray-500'>{attachment.size}</div>
+                        </div>
+                        <a href={attachment.url} download={attachment.name} target='_blank' rel='noopener noreferrer'>
+                          <Button color='gray' size='xs' pill>
+                            <HiDownload className='h-3 w-3' />
+                          </Button>
+                        </a>
+                      </div>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

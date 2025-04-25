@@ -22,7 +22,7 @@ export interface IChannel {
 export interface ISender {
   _id: string
   name: string
-  avatar: string
+  avatar?: string
 }
 
 export interface IMessage {
