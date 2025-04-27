@@ -4,6 +4,7 @@ import React, { useEffect } from 'react'
 import PrivateRoute from './components/PrivateRoute/PrivateRoute'
 import { injectAuth0Functions } from './config/httpRequest'
 import { useAuth0 } from '@auth0/auth0-react'
+import ToastCustom from './components/ToastCustom.tsx/ToastCustom'
 function App() {
   const { logout } = useAuth0()
   useEffect(() => {
@@ -62,6 +63,7 @@ function App() {
           }
         </Routes>
       </Router>
+      <ToastCustom />
     </>
   )
 }

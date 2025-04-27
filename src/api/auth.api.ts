@@ -62,6 +62,52 @@ const refreshToken = async () => {
   return response.data
 }
 
+const getUserById = async (userId: string) => {
+  const response = await axios.get(`/users/${userId}`)
+  return response.data
+}
+
+const updateUserProfile = async (userId: string, formData: FormData) => {
+  const response = await axios.patch(`/users`, formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+  return response.data
+}
+
+const getChannelMembers = async (channelId: string) => {
+  const response = await axios.get(`/channels/${channelId}/members`)
+  return response.data
+}
+
+const createMessage = async (conversationId: string, content: string, files?: File[]) => {
+  const formData = new FormData()
+  formData.append('conversationId', conversationId)
+  formData.append('content', content)
+
+  if (files && files.length > 0) {
+    files.forEach((file) => {
+      formData.append('files', file)
+    })
+  }
+
+  const response = await axios.post('/messages', formData, {
+    headers: {
+      'Content-Type': 'multipart/form-data'
+    }
+  })
+  return response.data
+}
+
+const inviteUserToWorkspace = async (workspaceId: string, email: string, channelIds: string[]) => {
+  const response = await axios.post(`/workspaces/${workspaceId}/invite`, {
+    email,
+    channels: channelIds
+  })
+  return response.data
+}
+
 export {
   register,
   login,
@@ -72,5 +118,10 @@ export {
   createWorkspaces,
   getChannelsByWorkspaceId,
   getAllDmConversationsOfUser,
-  getMessagebyConversationId
+  getMessagebyConversationId,
+  getUserById,
+  updateUserProfile,
+  getChannelMembers,
+  createMessage,
+  inviteUserToWorkspace
 }

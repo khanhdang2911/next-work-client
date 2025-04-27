@@ -1,8 +1,8 @@
 import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from 'flowbite-react'
-import { HiChevronDown, HiChevronRight, HiPlus } from 'react-icons/hi'
+import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd } from 'react-icons/hi'
 import ChannelItem from './ChannelItem'
 import DirectMessageItem from './DirectMessageItem'
 import CreateChannelModal from './CreateChannelModal'
@@ -10,6 +10,8 @@ import { getChannelsByWorkspaceId, getAllDmConversationsOfUser, getAllWorkspaces
 import { toast } from 'react-toastify'
 import type { IChannel, IDirectMessage, IWorkspace } from '../../interfaces/Workspace'
 import { ErrorMessage } from '../../config/constants'
+import { useSelector } from 'react-redux'
+import { getAuthSelector } from '../../redux/selectors'
 
 const WorkspaceSidebar: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -20,12 +22,16 @@ const WorkspaceSidebar: React.FC = () => {
   const [alldm, setAlldm] = useState<IDirectMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [workspace, setWorkspace] = useState<IWorkspace | null>(null)
+  const [isAdmin, setIsAdmin] = useState(false)
   const createChannelBtnRef = useRef<HTMLButtonElement>(null)
+  const navigate = useNavigate()
+  const auth: any = useSelector(getAuthSelector)
+  const currentUserId = auth.user?._id
 
-  // Fetch workspace details to get the name
+  // Fetch workspace details to get the name and check if user is admin
   useEffect(() => {
     const fetchWorkspaceDetails = async () => {
-      if (!workspaceId) return
+      if (!workspaceId || !currentUserId) return
 
       try {
         const res = await getAllWorkspaces()
@@ -33,6 +39,8 @@ const WorkspaceSidebar: React.FC = () => {
           const currentWorkspace = res.data.find((ws: IWorkspace) => ws._id === workspaceId)
           if (currentWorkspace) {
             setWorkspace(currentWorkspace)
+            // Check if current user is the admin of this workspace
+            setIsAdmin(currentWorkspace.admin === currentUserId)
           }
         }
       } catch (error: any) {
@@ -41,7 +49,7 @@ const WorkspaceSidebar: React.FC = () => {
     }
 
     fetchWorkspaceDetails()
-  }, [workspaceId])
+  }, [workspaceId, currentUserId])
 
   useEffect(() => {
     const fetchChannels = async () => {
@@ -106,6 +114,10 @@ const WorkspaceSidebar: React.FC = () => {
     }
   }
 
+  const handleInviteUsers = () => {
+    navigate(`/workspace/${workspaceId}/workspace-invite`)
+  }
+
   return (
     <div className='w-64 bg-gray-900 h-screen flex flex-col'>
       <div className='p-4 border-b border-gray-700'>
@@ -113,6 +125,14 @@ const WorkspaceSidebar: React.FC = () => {
           {workspace ? workspace.name : 'Loading workspace...'}
           <span className='ml-auto text-gray-400 text-xs'>Y</span>
         </h1>
+        {isAdmin && (
+          <div className='mt-2'>
+            <Button color='blue' size='xs' className='w-full' onClick={handleInviteUsers}>
+              <HiUserAdd className='mr-1 h-3 w-3' />
+              Invite Users
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className='flex-1 overflow-y-auto py-4'>

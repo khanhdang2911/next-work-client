@@ -39,9 +39,7 @@ export default function Header() {
           {auth?.isAuthenticated ? (
             <Dropdown arrowIcon={false} inline label={<Avatar alt='User settings' img={auth.user?.avatar} rounded />}>
               <Dropdown.Header>
-                <span className='block text-sm'>
-                  {auth.user.firstname} {auth.user.lastname}
-                </span>
+                <span className='block text-sm'>{auth.user.name}</span>
                 <span className='block truncate text-sm font-medium'>{auth.user.email}</span>
               </Dropdown.Header>
               <Dropdown.Item icon={FaUserCircle}>Profile</Dropdown.Item>

@@ -7,6 +7,8 @@ import InvitePage from '../pages/InvitePage/InvitePage'
 import MembersPage from '../pages/MembersPage/MembersPage'
 import Register from '../pages/Register/Register'
 import Login from '../pages/Login/Login'
+import VerifyPage from '../pages/VerifyPage/VerifyPage'
+import WorkspaceInvitePage from '../pages/InvitePage/WorkspaceInvitePage'
 
 interface IRoute {
   path: string
@@ -28,6 +30,11 @@ const publicRoutes: IRoute[] = [
   {
     path: routes.register,
     component: Register,
+    layout: null
+  },
+  {
+    path: routes.verify,
+    component: VerifyPage,
     layout: null
   }
 ]
@@ -71,6 +78,11 @@ const privateRoutes: IRoute[] = [
   {
     path: routes.invite,
     component: InvitePage,
+    layout: null
+  },
+  {
+    path: routes.workspaceInvite,
+    component: WorkspaceInvitePage,
     layout: null
   },
   {

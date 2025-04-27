@@ -1,10 +1,12 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { Avatar, Button, Dropdown } from 'flowbite-react'
-import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiDownload, HiUser } from 'react-icons/hi'
+import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiDownload, HiUser, HiEye } from 'react-icons/hi'
 import { formatTime } from '../../utils/formatUtils'
 import type { IMessage, ISender } from '../../interfaces/Workspace'
 import EmojiPicker from './EmojiPicker'
 import { useNavigate } from 'react-router-dom'
+import { getAuthSelector } from '../../redux/selectors'
+import { useSelector } from 'react-redux'
 
 interface MessageItemProps {
   message: IMessage
@@ -21,7 +23,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const emojiButtonRef = useRef<HTMLButtonElement>(null)
     const navigate = useNavigate()
-
+    const auth: any = useSelector(getAuthSelector)
     const formattedContent = useMemo(() => {
       // Replace **text** with <strong>text</strong>
       let content = message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -32,7 +34,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       return content
     }, [message.content])
 
-    const isCurrentUser = user._id === 'user1'
+    const isCurrentUser = user._id === auth?.user._id
     const messageTime = formatTime(message.createdAt)
 
     const handleReactionClick = (e: React.MouseEvent) => {
@@ -46,10 +48,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     }
 
     const handleViewProfile = () => {
-      if (user._id !== 'user1') {
-        navigate(`/profile/${user._id}`)
-      } else {
+      if (isCurrentUser) {
         navigate('/profile')
+      } else {
+        navigate(`/profile/${user._id}`)
       }
     }
 
@@ -95,11 +97,6 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                     </div>
                   )}
                 </div>
-
-                <Button color='gray' pill size='xs' className='p-1 mr-1' onClick={handleViewProfile}>
-                  <HiUser className='h-3 w-3' />
-                </Button>
-
                 {isCurrentUser && (
                   <>
                     <Button color='gray' pill size='xs' className='p-1 mr-1' onClick={() => onEdit(message._id)}>
@@ -122,9 +119,6 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                 >
                   <Dropdown.Item icon={HiEmojiHappy} onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
                     Add Reaction
-                  </Dropdown.Item>
-                  <Dropdown.Item icon={HiUser} onClick={handleViewProfile}>
-                    View Profile
                   </Dropdown.Item>
                   {isCurrentUser && (
                     <>
@@ -157,7 +151,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                         style={{ maxHeight: '300px' }}
                       />
                       <div className='mt-1 text-xs text-gray-500'>
-                        {attachment.name} ({attachment.size})
+                        {attachment.name} ({attachment.size} MB)
                       </div>
                     </div>
                   ) : (
@@ -173,13 +167,13 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                             />
                           </svg>
                         </div>
-                        <div className='flex-1'>
+                        <div className='flex-1 mr-2'>
                           <div className='text-sm font-medium'>{attachment.name}</div>
-                          <div className='text-xs text-gray-500'>{attachment.size}</div>
+                          <div className='text-xs text-gray-500'>{attachment.size} MB</div>
                         </div>
                         <a href={attachment.url} download={attachment.name} target='_blank' rel='noopener noreferrer'>
                           <Button color='gray' size='xs' pill>
-                            <HiDownload className='h-3 w-3' />
+                            <HiEye className='h-3 w-3' />
                           </Button>
                         </a>
                       </div>

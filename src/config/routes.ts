@@ -2,6 +2,7 @@ const routes = {
   home: '/',
   login: '/login',
   register: '/register',
+  verify: '/verify-account/:token/:email',
   workspaces: '/workspaces',
   workspace: '/workspace/:workspaceId',
   channel: '/workspace/:workspaceId/channel/:conversationId',
@@ -9,6 +10,7 @@ const routes = {
   profile: '/profile',
   viewProfile: '/profile/:userId',
   invite: '/workspace/:workspaceId/invite',
+  workspaceInvite: '/workspace/:workspaceId/workspace-invite',
   members: '/workspace/:workspaceId/members',
   notFound: '*'
 }

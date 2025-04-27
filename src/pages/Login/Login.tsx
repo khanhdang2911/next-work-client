@@ -11,7 +11,6 @@ import Google from '../../assets/icons/google.svg'
 import LoadingOverlay from '../../components/LoadingPage/Loading'
 import { toast } from 'react-toastify'
 import { getAuthSelector } from '../../redux/selectors'
-import ToastCustom from '../../components/ToastCustom.tsx/ToastCustom'
 
 export default function Login() {
   const auth: any = useSelector(getAuthSelector)
@@ -152,7 +151,6 @@ export default function Login() {
         </p>
       </Card>
       <LoadingOverlay isLoading={isLoading} />
-      <ToastCustom />
     </div>
   )
 }

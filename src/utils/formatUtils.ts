@@ -1,6 +1,6 @@
+import moment from 'moment'
 export const formatTime = (dateString: string) => {
-  const date = new Date(dateString)
-  return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return moment(dateString).format('dddd, DD/MM/YYYY')
 }
 
 export const formatDate = (dateString: string) => {
@@ -32,16 +32,13 @@ export const getInitials = (name: string) => {
     .toUpperCase()
 }
 
+// Update the getStatusColor function to only handle 'online' and 'away'
 export const getStatusColor = (status: string) => {
   switch (status) {
     case 'online':
       return 'bg-green-500'
-    case 'offline':
-      return 'bg-gray-400'
     case 'away':
       return 'bg-yellow-500'
-    case 'busy':
-      return 'bg-red-500'
     default:
       return 'bg-gray-400'
   }
