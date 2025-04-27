@@ -13,9 +13,16 @@ interface IUser {
   _id: string
   name: string
   email: string
-  avatar: string
-  status: 'online' | 'offline' | 'away' | 'busy'
+  avatar?: string
+  status: 'online' | 'away'
+  gender: string
   lastSeen?: string
   accessToken?: string
 }
-export type { IUserRegister, IUserLogin, IUser }
+
+interface IChannelMember extends IUser {
+  joinedAt: string
+  admin: boolean
+}
+
+export type { IUserRegister, IUserLogin, IUser, IChannelMember }

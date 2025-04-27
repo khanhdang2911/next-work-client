@@ -26,6 +26,18 @@ const authSlice = createSlice({
         ...state.user,
         accessToken: action.payload
       } as IUser
+    },
+    // Add a new reducer to update only specific profile fields
+    updateUserProfile: (state, action) => {
+      if (state.user) {
+        state.user = {
+          ...state.user,
+          name: action.payload.name || state.user.name,
+          gender: action.payload.gender || state.user.gender,
+          status: action.payload.status || state.user.status,
+          avatar: action.payload.avatar || state.user.avatar
+        }
+      }
     }
   }
 })

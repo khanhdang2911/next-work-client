@@ -6,6 +6,9 @@ import { HiListBullet } from 'react-icons/hi2'
 import EmojiPicker from './EmojiPicker'
 import FileUploadModal from './FileUploadModal'
 import { useParams } from 'react-router-dom'
+import { createMessage } from '../../api/auth.api'
+import { toast } from 'react-toastify'
+import { ErrorMessage } from '../../config/constants'
 
 interface MessageInputProps {
   onSendMessage: (content: string) => void
@@ -13,6 +16,7 @@ interface MessageInputProps {
   isEditing?: boolean
   initialContent?: string
   onCancelEdit?: () => void
+  onMessageSent?: () => void
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -20,11 +24,14 @@ const MessageInput: React.FC<MessageInputProps> = ({
   onAttachFile,
   isEditing = false,
   initialContent = '',
-  onCancelEdit
+  onCancelEdit,
+  onMessageSent
 }) => {
   const [message, setMessage] = useState(initialContent)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
   const [showFileUploadModal, setShowFileUploadModal] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [isSending, setIsSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const { conversationId, workspaceId } = useParams<{ conversationId: string; workspaceId: string }>()
   const [currentChannel, setCurrentChannel] = useState<any>(null)
@@ -72,11 +79,40 @@ const MessageInput: React.FC<MessageInputProps> = ({
     fetchCurrentConversation()
   }, [workspaceId, conversationId])
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (message.trim()) {
+
+    if (!message.trim() && selectedFiles.length === 0) {
+      return
+    }
+
+    if (isEditing) {
       onSendMessage(message)
       setMessage('')
+      return
+    }
+
+    if (!conversationId) {
+      toast.error('Conversation ID is missing')
+      return
+    }
+
+    setIsSending(true)
+
+    try {
+      const response = await createMessage(conversationId, message, selectedFiles)
+
+      if (response.status === 'success') {
+        setMessage('')
+        setSelectedFiles([])
+        if (onMessageSent) {
+          onMessageSent()
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message ?? ErrorMessage)
+    } finally {
+      setIsSending(false)
     }
   }
 
@@ -130,6 +166,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   }
 
   const handleFileUpload = (file: File) => {
+    setSelectedFiles((prev) => [...prev, file])
+    setShowFileUploadModal(false)
+
     if (onAttachFile) {
       onAttachFile(file)
     }
@@ -178,6 +217,23 @@ const MessageInput: React.FC<MessageInputProps> = ({
         </Tooltip>
       </div>
 
+      {selectedFiles.length > 0 && (
+        <div className='mb-2 flex flex-wrap gap-2'>
+          {selectedFiles.map((file, index) => (
+            <div key={index} className='bg-gray-100 rounded px-2 py-1 text-sm flex items-center'>
+              <span className='truncate max-w-[150px]'>{file.name}</span>
+              <button
+                type='button'
+                className='ml-1 text-gray-500 hover:text-gray-700'
+                onClick={() => setSelectedFiles((prev) => prev.filter((_, i) => i !== index))}
+              >
+                &times;
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
       <div className='flex items-center'>
         <textarea
           ref={textareaRef}
@@ -187,6 +243,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
+          disabled={isSending}
         />
 
         <div className='ml-2 flex items-center space-x-2'>
@@ -208,9 +265,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </Button>
           </Tooltip>
 
-          <Button color='blue' pill size='sm' type='submit' disabled={!message.trim()}>
-            <HiPaperAirplane className='h-4 w-4' />
-            <span className='ml-1'>Send</span>
+          <Button
+            color='blue'
+            pill
+            size='sm'
+            type='submit'
+            disabled={isSending || (!message.trim() && selectedFiles.length === 0)}
+          >
+            {isSending ? (
+              <>
+                <div className='h-4 w-4 border-2 border-t-transparent border-white rounded-full animate-spin mr-1'></div>
+                <span>Sending</span>
+              </>
+            ) : (
+              <>
+                <HiPaperAirplane className='h-4 w-4' />
+                <span className='ml-1'>Send</span>
+              </>
+            )}
           </Button>
 
           {isEditing && onCancelEdit && (

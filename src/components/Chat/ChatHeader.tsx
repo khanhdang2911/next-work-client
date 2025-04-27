@@ -24,7 +24,7 @@ interface ChatHeaderProps {
 
 const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directMessageUser }) => {
   const navigate = useNavigate()
-  const { workspaceId } = useParams<{ workspaceId: string }>()
+  const { workspaceId, conversationId } = useParams<{ workspaceId: string; conversationId: string }>()
   const [showMembersModal, setShowMembersModal] = useState(false)
 
   const handleViewMembers = () => {
@@ -69,13 +69,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directM
             <h2 className='font-semibold'>{directMessageUser.name}</h2>
             <span
               className={`ml-2 w-2 h-2 rounded-full ${
-                directMessageUser.status === 'online'
-                  ? 'bg-green-500'
-                  : directMessageUser.status === 'away'
-                    ? 'bg-yellow-500'
-                    : directMessageUser.status === 'busy'
-                      ? 'bg-red-500'
-                      : 'bg-gray-400'
+                directMessageUser.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
               }`}
             ></span>
             <span className='ml-1 text-gray-500 text-sm'>{directMessageUser.status}</span>
@@ -121,7 +115,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directM
         </Tooltip>
       </div>
 
-      <ChannelMembersModal isOpen={showMembersModal} onClose={() => setShowMembersModal(false)} />
+      <ChannelMembersModal
+        isOpen={showMembersModal}
+        onClose={() => setShowMembersModal(false)}
+        channelId={channel?._id}
+        workspaceId={workspaceId}
+      />
     </div>
   )
 }

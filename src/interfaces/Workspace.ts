@@ -61,3 +61,9 @@ export interface IDirectMessage {
   unreadCount?: number
   conversationId: string
 }
+
+export interface IMessageCreateResponse {
+  status: string
+  message: string
+  data: IMessage
+}

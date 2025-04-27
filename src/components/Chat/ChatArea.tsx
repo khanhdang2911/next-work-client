@@ -5,7 +5,7 @@ import ChatHeader from './ChatHeader'
 import MessageItem from './MessageItem'
 import MessageInput from './MessageInput'
 import { getChannelById, getDirectMessageById, getDirectMessageParticipants } from '../../mockData/workspaces'
-import type { IMessage, IAttachment, IChannel, IDirectMessage } from '../../interfaces/Workspace'
+import type { IMessage, IChannel, IDirectMessage } from '../../interfaces/Workspace'
 import { getMessagebyConversationId, getChannelsByWorkspaceId, getAllDmConversationsOfUser } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
@@ -89,11 +89,14 @@ const ChatArea: React.FC = () => {
     return participants.find((user) => user._id !== 'user1')
   }, [directMessageId])
 
-  useEffect(() => {
-    const fetchMessagebyConversationId = async () => {
+  const fetchMessages = useCallback(
+    async (showLoadingState = true) => {
       if (!conversationId) return
 
-      setIsLoading(true)
+      if (showLoadingState) {
+        setIsLoading(true)
+      }
+
       try {
         console.log('Fetching messages for conversation:', conversationId)
         const res = await getMessagebyConversationId(conversationId)
@@ -104,59 +107,30 @@ const ChatArea: React.FC = () => {
         toast.error(error.response?.data?.message ?? ErrorMessage)
         setMessages([])
       } finally {
-        setIsLoading(false)
+        if (showLoadingState) {
+          setIsLoading(false)
+        }
       }
-    }
-
-    fetchMessagebyConversationId()
-  }, [conversationId])
-
-  const handleSendMessage = useCallback(
-    (content: string) => {
-      const newMessage: IMessage = {
-        _id: `message${Date.now()}`,
-        content,
-        senderId: {
-          _id: 'user1',
-          name: 'User 1'
-        },
-        conversationId: conversationId!,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        reactions: []
-      }
-
-      setMessages((prev) => [...prev, newMessage])
     },
     [conversationId]
   )
 
+  useEffect(() => {
+    fetchMessages()
+  }, [fetchMessages])
+
+  const handleSendMessage = useCallback(
+    (content: string) => {
+      // Refresh messages without showing loading state
+      fetchMessages(false)
+    },
+    [fetchMessages]
+  )
+
   const handleAttachFile = useCallback(
     (file: File) => {
-      const attachment: IAttachment = {
-        id: `attachment${Date.now()}`,
-        name: file.name,
-        type: file.type,
-        size: `${(file.size / 1024).toFixed(1)} KB`,
-        url: URL.createObjectURL(file), // Create a local URL for the file
-        messageId: `message${Date.now()}`
-      }
-
-      const newMessage: IMessage = {
-        _id: attachment.messageId,
-        content: `Attached file: ${file.name}`,
-        senderId: {
-          _id: 'user1',
-          name: 'User 1'
-        },
-        conversationId: conversationId!,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        reactions: [],
-        attachments: [attachment]
-      }
-
-      setMessages((prev) => [...prev, newMessage])
+      // File handling is now done in the MessageInput component
+      // This is kept for backward compatibility
     },
     [channelId, directMessageId]
   )
@@ -313,7 +287,13 @@ const ChatArea: React.FC = () => {
         </div>
       </div>
 
-      {!editingMessageId && <MessageInput onSendMessage={handleSendMessage} onAttachFile={handleAttachFile} />}
+      {!editingMessageId && (
+        <MessageInput
+          onSendMessage={handleSendMessage}
+          onAttachFile={handleAttachFile}
+          onMessageSent={() => fetchMessages(false)}
+        />
+      )}
     </div>
   )
 }

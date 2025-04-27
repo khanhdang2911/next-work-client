@@ -11,13 +11,19 @@ export default function Register() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('') // Thêm dòng này
   const [gender, setGender] = useState('')
   const navigate = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!name || !email || !password || !gender) {
+    if (!name || !email || !password || !confirmPassword || !gender) {
       toast.error('Please fill all fields.')
+      return
+    }
+
+    if (password !== confirmPassword) {
+      toast.error('Passwords do not match.')
       return
     }
 
@@ -27,6 +33,7 @@ export default function Register() {
         setName('')
         setEmail('')
         setPassword('')
+        setConfirmPassword('')
         setGender('')
         navigate('/login')
       }
@@ -79,6 +86,21 @@ export default function Register() {
               className='mt-1'
             />
           </div>
+          {/* Thêm Confirm Password */}
+          <div>
+            <Label htmlFor='confirmPassword' value='Confirm Password' className='text-sm font-medium text-gray-700' />
+            <TextInput
+              id='confirmPassword'
+              type='password'
+              icon={HiLockClosed}
+              placeholder='••••••••'
+              required
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className='mt-1'
+            />
+          </div>
+
           <div>
             <Label value='Gender' className='text-sm font-medium text-gray-700 mb-2 block' />
             <div className='flex gap-4'>
@@ -108,6 +130,7 @@ export default function Register() {
               </div>
             </div>
           </div>
+
           <Button color='blue' type='submit' className='w-full'>
             Sign Up
           </Button>
