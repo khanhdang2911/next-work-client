@@ -155,7 +155,7 @@ const WorkspaceSidebar: React.FC = () => {
               pill
               className='ml-auto p-1'
               title='Add Channel'
-              onClick={(e) => {
+              onClick={(e: any) => {
                 e.stopPropagation()
                 setIsCreateChannelModalOpen(true)
               }}

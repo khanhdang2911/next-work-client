@@ -2,7 +2,6 @@ import type React from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Button } from 'flowbite-react'
 import { HiArrowLeft } from 'react-icons/hi'
-import MembersList from '../../components/Members/MembersList'
 
 const MembersPage: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -17,8 +16,6 @@ const MembersPage: React.FC = () => {
           </Button>
         </Link>
       </div>
-
-      <MembersList />
     </div>
   )
 }
