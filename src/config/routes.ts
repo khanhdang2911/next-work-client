@@ -11,6 +11,7 @@ const routes = {
   viewProfile: '/profile/:userId',
   invite: '/workspace/:workspaceId/invite',
   workspaceInvite: '/workspace/:workspaceId/workspace-invite',
+  acceptInvitation: '/workspace/:workspaceId/accept-invitation/:token',
   members: '/workspace/:workspaceId/members',
   notFound: '*'
 }

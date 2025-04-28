@@ -108,6 +108,18 @@ const inviteUserToWorkspace = async (workspaceId: string, email: string, channel
   return response.data
 }
 
+const acceptWorkspaceInvitation = async (workspaceId: string, token: string) => {
+  const response = await axios.get(`/workspaces/${workspaceId}/accept-invitation/${token}`)
+  return response.data
+}
+
+const inviteUserToChannel = async (workspaceId: string, channelId: string, email: string) => {
+  const response = await axios.post(`/channels/${workspaceId}/${channelId}/invite`, {
+    email
+  })
+  return response.data
+}
+
 export {
   register,
   login,
@@ -123,5 +135,7 @@ export {
   updateUserProfile,
   getChannelMembers,
   createMessage,
-  inviteUserToWorkspace
+  inviteUserToWorkspace,
+  acceptWorkspaceInvitation,
+  inviteUserToChannel
 }

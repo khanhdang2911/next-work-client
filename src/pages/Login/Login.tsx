@@ -11,6 +11,7 @@ import Google from '../../assets/icons/google.svg'
 import LoadingOverlay from '../../components/LoadingPage/Loading'
 import { toast } from 'react-toastify'
 import { getAuthSelector } from '../../redux/selectors'
+import ToastCustom from '../../components/ToastCustom.tsx/ToastCustom'
 
 export default function Login() {
   const auth: any = useSelector(getAuthSelector)
@@ -22,6 +23,9 @@ export default function Login() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
+  // Check if there's a pending invitation redirect
+  const invitationRedirect = sessionStorage.getItem('invitationRedirect')
+
   useEffect(() => {
     const handleLoginWithAuth0 = async () => {
       const accessToken = await getAccessTokenSilently()
@@ -29,7 +33,15 @@ export default function Login() {
       if (response.status === 'success') {
         dispatch(authSlice.actions.setUser(response.data))
       }
-      navigate('/')
+
+      // Check if there's a pending invitation redirect
+      const redirectPath = sessionStorage.getItem('invitationRedirect')
+      if (redirectPath) {
+        sessionStorage.removeItem('invitationRedirect')
+        navigate(redirectPath)
+      } else {
+        navigate('/')
+      }
     }
 
     try {
@@ -55,7 +67,14 @@ export default function Login() {
         dispatch(authSlice.actions.setUser(response.data))
       }
       setIsLoading(false)
-      navigate('/')
+
+      // Check if there's a pending invitation redirect
+      if (invitationRedirect) {
+        sessionStorage.removeItem('invitationRedirect')
+        navigate(invitationRedirect)
+      } else {
+        navigate('/')
+      }
     } catch (error) {
       setIsLoading(false)
       toast.error((error as any)?.response?.data.message)
@@ -75,6 +94,13 @@ export default function Login() {
   }
 
   if (auth.isAuthenticated) {
+    // Check if there's a pending invitation redirect
+    if (invitationRedirect) {
+      sessionStorage.removeItem('invitationRedirect')
+      navigate(invitationRedirect)
+      return null
+    }
+
     navigate('/')
     return null
   }
@@ -83,6 +109,11 @@ export default function Login() {
     <div className='flex items-center justify-center min-h-screen bg-gray-100'>
       <Card className='w-full max-w-md'>
         <h2 className='text-2xl font-bold text-center mb-6 text-gray-800'>Welcome Back</h2>
+        {invitationRedirect && (
+          <div className='mb-4 p-3 bg-blue-50 text-blue-800 rounded-lg'>
+            Please log in to accept the workspace invitation
+          </div>
+        )}
         <form className='flex flex-col gap-4' onSubmit={handleSubmit}>
           <div>
             <Label htmlFor='email' className='text-sm font-medium text-gray-700'>
@@ -137,7 +168,7 @@ export default function Login() {
           </div>
           <div className='mt-6'>
             <Button onClick={handleGoogleLogin} color='light' className='w-full flex items-center justify-center'>
-              <img className='w-4 h-4 mt-0.5 mr-1' src={Google} alt='google' />
+              <img className='w-4 h-4 mt-0.5 mr-1' src={Google || '/placeholder.svg'} alt='google' />
               <p>Google</p>
             </Button>
           </div>
@@ -151,6 +182,7 @@ export default function Login() {
         </p>
       </Card>
       <LoadingOverlay isLoading={isLoading} />
+      <ToastCustom />
     </div>
   )
 }
