@@ -67,7 +67,7 @@ const getUserById = async (userId: string) => {
   return response.data
 }
 
-const updateUserProfile = async (userId: string, formData: FormData) => {
+const updateUserProfile = async (formData: FormData) => {
   const response = await axios.patch(`/users`, formData, {
     headers: {
       'Content-Type': 'multipart/form-data'

@@ -58,6 +58,7 @@ export interface IDirectMessage {
   _id: string
   name: string
   avatar: string
+  status: string
   unreadCount?: number
   conversationId: string
 }

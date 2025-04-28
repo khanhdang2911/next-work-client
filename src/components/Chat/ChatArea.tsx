@@ -1,18 +1,16 @@
 import type React from 'react'
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback} from 'react'
 import { useParams } from 'react-router-dom'
 import ChatHeader from './ChatHeader'
 import MessageItem from './MessageItem'
 import MessageInput from './MessageInput'
-import { getChannelById, getDirectMessageById, getDirectMessageParticipants } from '../../mockData/workspaces'
 import type { IMessage, IChannel, IDirectMessage } from '../../interfaces/Workspace'
 import { getMessagebyConversationId, getChannelsByWorkspaceId, getAllDmConversationsOfUser } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
 
 const ChatArea: React.FC = () => {
-  const { channelId, directMessageId, conversationId, workspaceId } = useParams<{
-    channelId: string
+  const { directMessageId, conversationId, workspaceId } = useParams<{
     directMessageId: string
     conversationId: string
     workspaceId: string
@@ -72,23 +70,6 @@ const ChatArea: React.FC = () => {
 
     fetchCurrentDirectMessage()
   }, [conversationId])
-
-  const channel = useMemo(
-    () => currentChannel || (channelId ? getChannelById(channelId) : undefined),
-    [currentChannel, channelId]
-  )
-
-  const directMessage = useMemo(
-    () => currentDirectMessage || (directMessageId ? getDirectMessageById(directMessageId) : undefined),
-    [currentDirectMessage, directMessageId]
-  )
-
-  const directMessageUser = useMemo(() => {
-    if (!directMessageId) return undefined
-    const participants = getDirectMessageParticipants(directMessageId)
-    return participants.find((user) => user._id !== 'user1')
-  }, [directMessageId])
-
   const fetchMessages = useCallback(
     async (showLoadingState = true) => {
       if (!conversationId) return
@@ -120,7 +101,7 @@ const ChatArea: React.FC = () => {
   }, [fetchMessages])
 
   const handleSendMessage = useCallback(
-    (content: string) => {
+    () => {
       // Refresh messages without showing loading state
       fetchMessages(false)
     },
@@ -128,11 +109,11 @@ const ChatArea: React.FC = () => {
   )
 
   const handleAttachFile = useCallback(
-    (file: File) => {
+    () => {
       // File handling is now done in the MessageInput component
       // This is kept for backward compatibility
     },
-    [channelId, directMessageId]
+    [currentChannel?._id, directMessageId]
   )
 
   const handleEditMessage = useCallback((messageId: string) => {
@@ -225,15 +206,10 @@ const ChatArea: React.FC = () => {
     )
   }, [])
 
-  const editingMessage = useMemo(() => {
-    if (!editingMessageId) return null
-    return messages.find((message) => message._id === editingMessageId)
-  }, [editingMessageId, messages])
-
   if (isLoading) {
     return (
       <div className='flex-1 flex flex-col h-screen'>
-        <ChatHeader channel={channel} directMessage={directMessage} directMessageUser={directMessageUser} />
+        <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} />
         <div className='flex-1 flex items-center justify-center'>
           <div className='h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin'></div>
         </div>
@@ -243,7 +219,7 @@ const ChatArea: React.FC = () => {
 
   return (
     <div className='flex-1 flex flex-col h-screen'>
-      <ChatHeader channel={channel} directMessage={directMessage} directMessageUser={directMessageUser} />
+      <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} />
 
       <div className='flex-1 overflow-y-auto'>
         <div className='py-4'>

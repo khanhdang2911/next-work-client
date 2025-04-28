@@ -36,7 +36,7 @@ const WorkspaceList: React.FC<WorkspaceListProps> = ({ activeWorkspaceId }) => {
     fetchWorkspaces()
   }, [])
 
-  const handleCreateWorkspace = async (name: string, description: string) => {
+  const handleCreateWorkspace = async () => {//Bo sung sau
     // Implementation remains the same
   }
 

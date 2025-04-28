@@ -12,7 +12,6 @@ import {
   HiUsers
 } from 'react-icons/hi'
 import type { IChannel, IDirectMessage } from '../../interfaces/Workspace'
-import type { IUser } from '../../interfaces/User'
 import { useNavigate, useParams } from 'react-router-dom'
 import ChannelMembersModal from './ChannelMembersModal'
 import ChannelInviteModal from './ChannelInviteModel'
@@ -20,12 +19,11 @@ import ChannelInviteModal from './ChannelInviteModel'
 interface ChatHeaderProps {
   channel?: IChannel | null
   directMessage?: IDirectMessage | null
-  directMessageUser?: IUser
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directMessageUser }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage}) => {
   const navigate = useNavigate()
-  const { workspaceId, conversationId } = useParams<{ workspaceId: string; conversationId: string }>()
+  const { workspaceId } = useParams<{ workspaceId: string; conversationId: string }>()
   const [showMembersModal, setShowMembersModal] = useState(false)
   const [showInviteModal, setShowInviteModal] = useState(false)
 
@@ -60,27 +58,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directM
               className='w-5 h-5 rounded-full mr-2'
             />
             <h2 className='font-semibold'>{directMessage.name}</h2>
-            <span className={`ml-2 w-2 h-2 rounded-full bg-green-500`}></span>
-            <span className='ml-1 text-gray-500 text-sm'>online</span>
+            <span
+              className={`ml-2 w-2 h-2 rounded-full ${
+                directMessage.status === 'Online' ? 'bg-green-500' : 'bg-yellow-500'
+              }`}
+            ></span>
+            <span className='ml-1 text-gray-500 text-sm'>{directMessage.status}</span>
           </div>
         )}
 
-        {!channel && !directMessage && directMessageUser && (
-          <div className='flex items-center'>
-            <img
-              src={directMessageUser.avatar || '/placeholder.svg'}
-              alt={directMessageUser.name}
-              className='w-5 h-5 rounded-full mr-2'
-            />
-            <h2 className='font-semibold'>{directMessageUser.name}</h2>
-            <span
-              className={`ml-2 w-2 h-2 rounded-full ${
-                directMessageUser.status === 'online' ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
-            ></span>
-            <span className='ml-1 text-gray-500 text-sm'>{directMessageUser.status}</span>
-          </div>
-        )}
       </div>
 
       <div className='flex items-center space-x-2'>

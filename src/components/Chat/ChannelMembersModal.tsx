@@ -14,7 +14,7 @@ interface ChannelMembersModalProps {
   workspaceId?: string
 }
 
-const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClose, channelId, workspaceId }) => {
+const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClose, channelId }) => {
   const [members, setMembers] = useState<IChannelMember[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
@@ -43,12 +43,6 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
     onClose()
     navigate(`/profile/${userId}`)
   }
-
-  const handleInviteMembers = () => {
-    onClose()
-    navigate(`/workspace/${workspaceId}/invite`)
-  }
-
   const getStatusColor = (status: string) => {
     return status === 'Online' ? 'bg-green-500' : 'bg-yellow-500'
   }

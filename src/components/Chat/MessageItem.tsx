@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef } from 'react'
 import { Avatar, Button, Dropdown } from 'flowbite-react'
-import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiDownload, HiUser, HiEye } from 'react-icons/hi'
+import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiEye } from 'react-icons/hi'
 import { formatTime } from '../../utils/formatUtils'
 import type { IMessage, ISender } from '../../interfaces/Workspace'
 import EmojiPicker from './EmojiPicker'
@@ -18,7 +18,7 @@ interface MessageItemProps {
 }
 
 const MessageItem: React.FC<MessageItemProps> = React.memo(
-  ({ message, user, onEdit, onDelete, onReact, onViewProfile }) => {
+  ({ message, user, onEdit, onDelete, onReact}) => {
     const [showActions, setShowActions] = useState(false)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const emojiButtonRef = useRef<HTMLButtonElement>(null)
@@ -67,7 +67,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         onMouseLeave={() => setShowActions(false)}
       >
         <div className='cursor-pointer' onClick={handleViewProfile}>
-          <Avatar img={user.avatar || '/favicon.svg'} rounded size='md' className='mr-3' />
+          <Avatar img={user.avatar} rounded size='md' className='mr-3' />
         </div>
 
         <div className='flex-1'>

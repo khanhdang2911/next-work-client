@@ -36,7 +36,7 @@ const ProfileForm: React.FC = () => {
       formData.append('gender', gender)
       formData.append('status', status)
 
-      const response = await updateUserProfile(currentUser._id, formData)
+      const response = await updateUserProfile(formData)
 
       if (response.status === 'success') {
         // Only update specific fields in Redux store, not the entire user object
