@@ -15,6 +15,7 @@ import type { IChannel, IDirectMessage } from '../../interfaces/Workspace'
 import type { IUser } from '../../interfaces/User'
 import { useNavigate, useParams } from 'react-router-dom'
 import ChannelMembersModal from './ChannelMembersModal'
+import ChannelInviteModal from './ChannelInviteModel'
 
 interface ChatHeaderProps {
   channel?: IChannel | null
@@ -26,9 +27,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directM
   const navigate = useNavigate()
   const { workspaceId, conversationId } = useParams<{ workspaceId: string; conversationId: string }>()
   const [showMembersModal, setShowMembersModal] = useState(false)
+  const [showInviteModal, setShowInviteModal] = useState(false)
 
   const handleViewMembers = () => {
     setShowMembersModal(true)
+  }
+
+  const handleInviteToChannel = () => {
+    setShowInviteModal(true)
   }
 
   const handleInviteMembers = () => {
@@ -102,11 +108,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directM
           </Button>
         </Tooltip>
 
-        <Tooltip content='Invite People'>
-          <Button color='gray' pill size='sm' onClick={handleInviteMembers}>
-            <HiUserAdd className='h-4 w-4' />
-          </Button>
-        </Tooltip>
+        {channel ? (
+          <Tooltip content='Invite to Channel'>
+            <Button color='gray' pill size='sm' onClick={handleInviteToChannel}>
+              <HiUserAdd className='h-4 w-4' />
+            </Button>
+          </Tooltip>
+        ) : (
+          <Tooltip content='Invite to Workspace'>
+            <Button color='gray' pill size='sm' onClick={handleInviteMembers}>
+              <HiUserAdd className='h-4 w-4' />
+            </Button>
+          </Tooltip>
+        )}
 
         <Tooltip content='Info'>
           <Button color='gray' pill size='sm'>
@@ -115,12 +129,24 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, directM
         </Tooltip>
       </div>
 
-      <ChannelMembersModal
-        isOpen={showMembersModal}
-        onClose={() => setShowMembersModal(false)}
-        channelId={channel?._id}
-        workspaceId={workspaceId}
-      />
+      {channel && (
+        <>
+          <ChannelMembersModal
+            isOpen={showMembersModal}
+            onClose={() => setShowMembersModal(false)}
+            channelId={channel._id}
+            workspaceId={workspaceId}
+          />
+
+          <ChannelInviteModal
+            isOpen={showInviteModal}
+            onClose={() => setShowInviteModal(false)}
+            workspaceId={workspaceId ?? ''}
+            channelId={channel._id}
+            channelName={channel.name}
+          />
+        </>
+      )}
     </div>
   )
 }

@@ -3,12 +3,12 @@ import WorkspacesPage from '../pages/WorkspacesPage/WorkspacesPage'
 import WorkspacePage from '../pages/WorkspacePage/WorkspacePage'
 import ProfilePage from '../pages/ProfilePage/ProfilePage'
 import ViewProfilePage from '../pages/ProfilePage/ViewProfilePage'
-import InvitePage from '../pages/InvitePage/InvitePage'
 import MembersPage from '../pages/MembersPage/MembersPage'
 import Register from '../pages/Register/Register'
 import Login from '../pages/Login/Login'
 import VerifyPage from '../pages/VerifyPage/VerifyPage'
 import WorkspaceInvitePage from '../pages/InvitePage/WorkspaceInvitePage'
+import AcceptInvitationPage from '../pages/InvitePage/AcceptInvitationPage'
 
 interface IRoute {
   path: string
@@ -35,6 +35,11 @@ const publicRoutes: IRoute[] = [
   {
     path: routes.verify,
     component: VerifyPage,
+    layout: null
+  },
+  {
+    path: routes.acceptInvitation,
+    component: AcceptInvitationPage,
     layout: null
   }
 ]
@@ -73,11 +78,6 @@ const privateRoutes: IRoute[] = [
   {
     path: routes.viewProfile,
     component: ViewProfilePage,
-    layout: null
-  },
-  {
-    path: routes.invite,
-    component: InvitePage,
     layout: null
   },
   {

@@ -5,7 +5,7 @@ import { getChannelMembers } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import type { IChannelMember } from '../../interfaces/User'
 import { useNavigate } from 'react-router-dom'
-import { HiUserAdd, HiMail } from 'react-icons/hi'
+import { HiMail } from 'react-icons/hi'
 
 interface ChannelMembersModalProps {
   isOpen: boolean
@@ -68,13 +68,6 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
           </div>
         ) : (
           <div className='space-y-6'>
-            <div className='flex justify-end mb-2'>
-              <Button color='blue' size='sm' onClick={handleInviteMembers}>
-                <HiUserAdd className='mr-2 h-5 w-5' />
-                Invite Members
-              </Button>
-            </div>
-
             {members.length === 0 ? (
               <div className='text-center py-6 text-gray-500 text-base'>No members found</div>
             ) : (
