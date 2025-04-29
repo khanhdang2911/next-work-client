@@ -34,7 +34,6 @@ export interface IMessage {
   attachments?: IAttachment[]
   createdAt: string
   updatedAt: string
-  isEdited?: boolean
 }
 
 export interface IReaction {

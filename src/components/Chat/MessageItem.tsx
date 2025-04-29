@@ -34,6 +34,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       return content
     }, [message.content])
 
+    const isEdited = useMemo(() => {
+      return message.createdAt !== message.updatedAt
+    }, [message.createdAt, message.updatedAt])
+
     const isCurrentUser = user._id === auth?.user._id
     const messageTime = formatTime(message.createdAt)
 
@@ -76,6 +80,9 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
               {user.name}
             </span>
             <span className='text-gray-500 text-xs ml-2'>{messageTime}</span>
+            {isEdited && (
+              <span className="text-purple-700 text-xs ml-1 font-semibold">(Edited)</span>
+            )}
 
             {showActions && (
               <div className='ml-2 flex'>
