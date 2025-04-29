@@ -36,6 +36,18 @@ const getMessagebyConversationId = async (conversationId: string) => {
   return response.data
 }
 
+const updateMessage = async ( messageId: string ,newMessage: string ) => {
+  const response = await axios.patch(`/messages/${messageId}`, {
+    content: newMessage
+  })
+  return response.data
+}
+
+const deleteMessage = async ( messageId: string ) => {
+  const response = await axios.delete(`/messages/${messageId}`)
+  return response.data
+}
+
 const loginWithAuth0 = async (data: any, accessToken: string) => {
   const response = await normalInstance.post('/auth/login-auth0', data, {
     headers: {
@@ -137,5 +149,7 @@ export {
   createMessage,
   inviteUserToWorkspace,
   acceptWorkspaceInvitation,
-  inviteUserToChannel
+  inviteUserToChannel,
+  updateMessage,
+  deleteMessage
 }

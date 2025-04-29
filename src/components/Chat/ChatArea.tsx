@@ -5,7 +5,7 @@ import ChatHeader from './ChatHeader'
 import MessageItem from './MessageItem'
 import MessageInput from './MessageInput'
 import type { IMessage, IChannel, IDirectMessage } from '../../interfaces/Workspace'
-import { getMessagebyConversationId, getChannelsByWorkspaceId, getAllDmConversationsOfUser } from '../../api/auth.api'
+import { getMessagebyConversationId, getChannelsByWorkspaceId, getAllDmConversationsOfUser, updateMessage, deleteMessage } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
 
@@ -121,26 +121,40 @@ const ChatArea: React.FC = () => {
   }, [])
 
   const handleUpdateMessage = useCallback(
-    (content: string) => {
-      setMessages((prev) =>
-        prev.map((message) =>
-          message._id === editingMessageId
-            ? {
-                ...message,
-                content,
-                updatedAt: new Date().toISOString(),
-                isEdited: true
-              }
-            : message
-        )
-      )
-      setEditingMessageId(null)
+    async (content: string) => {
+      try {
+        const res = await updateMessage(editingMessageId!, content)
+        if(res.status == "success") {
+          setMessages((prev) =>
+            prev.map((message) =>
+              message._id === editingMessageId
+                ? {
+                    ...message,
+                    content,
+                    updatedAt: res.updatedAt,
+                  }
+                : message
+            )
+          )
+          setEditingMessageId(null)
+        }
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
     },
     [editingMessageId]
   )
 
-  const handleDeleteMessage = useCallback((messageId: string) => {
-    setMessages((prev) => prev.filter((message) => message._id !== messageId))
+  const handleDeleteMessage = useCallback( 
+    async (messageId: string) => {
+      try {
+        const res = await deleteMessage(messageId)
+        if(res.status = "success"){
+          setMessages((prev) => prev.filter((message) => message._id !== messageId))
+        }
+      } catch (error: any){
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
   }, [])
 
   const handleReactToMessage = useCallback((messageId: string, emoji: string) => {
