@@ -48,6 +48,11 @@ const deleteMessage = async ( messageId: string ) => {
   return response.data
 }
 
+const deleteMemberChannel = async ( channelId: string, userId: string) => {
+  const response = await axios.delete(`/channels/${channelId}/members/${userId}`)
+  return response.data
+}
+
 const loginWithAuth0 = async (data: any, accessToken: string) => {
   const response = await normalInstance.post('/auth/login-auth0', data, {
     headers: {
@@ -151,5 +156,6 @@ export {
   acceptWorkspaceInvitation,
   inviteUserToChannel,
   updateMessage,
-  deleteMessage
+  deleteMessage,
+  deleteMemberChannel
 }

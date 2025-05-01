@@ -124,7 +124,7 @@ const ChatArea: React.FC = () => {
     async (content: string) => {
       try {
         const res = await updateMessage(editingMessageId!, content)
-        if(res.status == "success") {
+        if(res.status === "success") {
           setMessages((prev) =>
             prev.map((message) =>
               message._id === editingMessageId
@@ -149,7 +149,7 @@ const ChatArea: React.FC = () => {
     async (messageId: string) => {
       try {
         const res = await deleteMessage(messageId)
-        if(res.status = "success"){
+        if(res.status === "success"){
           setMessages((prev) => prev.filter((message) => message._id !== messageId))
         }
       } catch (error: any){
