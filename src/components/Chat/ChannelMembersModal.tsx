@@ -5,7 +5,12 @@ import { getChannelMembers } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import type { IChannelMember } from '../../interfaces/User'
 import { useNavigate } from 'react-router-dom'
-import { HiMail } from 'react-icons/hi'
+import { HiMail, HiTrash } from 'react-icons/hi'
+import { useSelector } from 'react-redux'
+import { getAuthSelector } from '../../redux/selectors'
+import { deleteMemberChannel } from '../../api/auth.api'
+import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import { ErrorMessage } from '../../config/constants'
 
 interface ChannelMembersModalProps {
   isOpen: boolean
@@ -19,6 +24,47 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
+  const auth: any = useSelector(getAuthSelector)
+  const currentUserId = auth.user?._id
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
+  
+  const handleDeleteClick = (userId: string) => {
+    setSelectedUserId(userId)
+    setShowDeleteConfirm(true)
+  }
+
+  const handleConfirmDelete = () => {
+    if (selectedUserId) {
+      handleDeleteMember(selectedUserId)
+    }
+    setShowDeleteConfirm(false)
+    setSelectedUserId(null)
+  }
+
+  const handleCancelDelete = () => {
+    setShowDeleteConfirm(false)
+  }
+  
+
+  const isCurrentUserAdmin = members.some(
+    (member) => member._id === currentUserId && member.admin
+  )
+
+  const handleDeleteMember = async (userId: string) => {
+    if (!channelId) return
+    
+    try {
+      const res = await deleteMemberChannel(channelId, userId)
+      if(res.status === 'success') {
+        toast.success(res.message)
+        setMembers((prev) => prev.filter((member) => member._id !== userId))
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || ErrorMessage)
+    }
+  }
+
   useEffect(() => {
     const fetchMembers = async () => {
       if (!channelId || !isOpen) return
@@ -30,7 +76,7 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
           setMembers(response.data)
         }
       } catch (error: any) {
-        toast.error(error.response?.data?.message)
+        toast.error(error.response?.data?.message || ErrorMessage)
       } finally {
         setIsLoading(false)
       }
@@ -94,6 +140,16 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
                     <Button size='xs' color='light'>
                       <HiMail className='h-4 w-4' />
                     </Button>
+                    {isCurrentUserAdmin && !member.admin && (
+                      <Button 
+                        size='xs' 
+                        color='failure' 
+                        onClick={() => handleDeleteClick(member._id)}
+                        title="Delete member"
+                      >
+                        <HiTrash className='h-4 w-4' />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))
@@ -101,6 +157,13 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
           </div>
         )}
       </Modal.Body>
+      <ConfirmDialog
+        show={showDeleteConfirm}
+        title="Delete Member"
+        message="Are you sure you want to delete this member?"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+      />
     </Modal>
   )
 }

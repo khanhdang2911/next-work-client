@@ -7,6 +7,7 @@ import EmojiPicker from './EmojiPicker'
 import { useNavigate } from 'react-router-dom'
 import { getAuthSelector } from '../../redux/selectors'
 import { useSelector } from 'react-redux'
+import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 
 interface MessageItemProps {
   message: IMessage
@@ -40,6 +41,21 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
 
     const isCurrentUser = user._id === auth?.user._id
     const messageTime = formatTime(message.createdAt)
+
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+
+    const handleDeleteClick = () => {
+      setShowDeleteConfirm(true)
+    }
+
+    const handleConfirmDelete = () => {
+      onDelete(message._id)
+      setShowDeleteConfirm(false)
+    }
+
+    const handleCancelDelete = () => {
+      setShowDeleteConfirm(false)
+    }
 
     const handleReactionClick = (e: React.MouseEvent) => {
       e.stopPropagation()
@@ -109,7 +125,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                     <Button color='gray' pill size='xs' className='p-1 mr-1' onClick={() => onEdit(message._id)}>
                       <HiPencil className='h-3 w-3' />
                     </Button>
-                    <Button color='gray' pill size='xs' className='p-1' onClick={() => onDelete(message._id)}>
+                    <Button color='gray' pill size='xs' className='p-1' onClick={handleDeleteClick}>
                       <HiTrash className='h-3 w-3' />
                     </Button>
                   </>
@@ -132,12 +148,19 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                       <Dropdown.Item icon={HiPencil} onClick={() => onEdit(message._id)}>
                         Edit Message
                       </Dropdown.Item>
-                      <Dropdown.Item icon={HiTrash} onClick={() => onDelete(message._id)}>
+                      <Dropdown.Item icon={HiTrash} onClick={handleDeleteClick}>
                         Delete Message
                       </Dropdown.Item>
                     </>
                   )}
                 </Dropdown>
+                <ConfirmDialog
+                  show={showDeleteConfirm}
+                  title="Delete Message"
+                  message="Are you sure you want to delete this message?"
+                  onConfirm={handleConfirmDelete}
+                  onCancel={handleCancelDelete}
+                />
               </div>
             )}
           </div>
