@@ -1,13 +1,25 @@
 import type React from 'react'
-import { useState, useEffect, useCallback} from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams } from 'react-router-dom'
 import ChatHeader from './ChatHeader'
 import MessageItem from './MessageItem'
 import MessageInput from './MessageInput'
 import type { IMessage, IChannel, IDirectMessage } from '../../interfaces/Workspace'
-import { getMessagebyConversationId, getChannelsByWorkspaceId, getAllDmConversationsOfUser, updateMessage, deleteMessage } from '../../api/auth.api'
+import {
+  getMessagebyConversationId,
+  getChannelsByWorkspaceId,
+  getAllDmConversationsOfUser,
+  updateMessage,
+  deleteMessage
+} from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
+import useSocket from '../../hooks/useSocket'
+import {
+  sendMessage,
+  editMessage as socketEditMessage,
+  deleteMessage as socketDeleteMessage
+} from '../../config/socket'
 
 const ChatArea: React.FC = () => {
   const { directMessageId, conversationId, workspaceId } = useParams<{
@@ -20,6 +32,15 @@ const ChatArea: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [currentChannel, setCurrentChannel] = useState<IChannel | null>(null)
   const [currentDirectMessage, setCurrentDirectMessage] = useState<IDirectMessage | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
+
+  // Socket integration
+  const { isConnected, onlineUsers, setupChatListeners } = useSocket()
+
+  // Scroll to bottom of messages
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }
 
   // Fetch current channel details
   useEffect(() => {
@@ -70,6 +91,7 @@ const ChatArea: React.FC = () => {
 
     fetchCurrentDirectMessage()
   }, [conversationId])
+
   const fetchMessages = useCallback(
     async (showLoadingState = true) => {
       if (!conversationId) return
@@ -83,6 +105,7 @@ const ChatArea: React.FC = () => {
         const res = await getMessagebyConversationId(conversationId)
         if (res.status === 'success') {
           setMessages(res.data)
+          setTimeout(scrollToBottom, 100)
         }
       } catch (error: any) {
         toast.error(error.response?.data?.message ?? ErrorMessage)
@@ -100,21 +123,58 @@ const ChatArea: React.FC = () => {
     fetchMessages()
   }, [fetchMessages])
 
-  const handleSendMessage = useCallback(
-    () => {
-      // Refresh messages without showing loading state
-      fetchMessages(false)
-    },
-    [fetchMessages]
-  )
+  // Setup socket listeners for real-time messages
+  useEffect(() => {
+    if (!isConnected || !conversationId) return
 
-  const handleAttachFile = useCallback(
-    () => {
-      // File handling is now done in the MessageInput component
-      // This is kept for backward compatibility
-    },
-    [currentChannel?._id, directMessageId]
-  )
+    const cleanup = setupChatListeners(
+      // Handle new message
+      (newMessage) => {
+        if (newMessage.conversationId === conversationId) {
+          setMessages((prev) => [...prev, newMessage])
+          setTimeout(scrollToBottom, 100)
+        }
+      },
+      // Handle edited message
+      (updatedMessage) => {
+        if (updatedMessage.conversationId === conversationId) {
+          setMessages((prev) => prev.map((msg) => (msg._id === updatedMessage._id ? updatedMessage : msg)))
+        }
+      },
+      // Handle deleted message
+      (deletedMessage) => {
+        if (deletedMessage.conversationId === conversationId) {
+          setMessages((prev) => prev.filter((msg) => msg._id !== deletedMessage._id))
+        }
+      }
+    )
+
+    return cleanup
+  }, [isConnected, conversationId, setupChatListeners])
+
+  // Handle sending a new message
+  const handleSendMessage = useCallback((messageOrContent: string | IMessage) => {
+    // If it's a string (from editing), convert to IMessage
+    if (typeof messageOrContent === 'string') {
+      // This case is for editing messages
+      return
+    }
+
+    // It's an IMessage object
+    const message = messageOrContent as IMessage
+
+    // Add message to local state immediately for better UX
+    setMessages((prev) => [...prev, message])
+
+    // Send via socket
+    sendMessage(message)
+
+    // Scroll to bottom
+    setTimeout(scrollToBottom, 100)
+  }, [])
+
+  const handleAttachFile = useCallback(() => {
+  }, [currentChannel?._id, directMessageId])
 
   const handleEditMessage = useCallback((messageId: string) => {
     setEditingMessageId(messageId)
@@ -123,39 +183,52 @@ const ChatArea: React.FC = () => {
   const handleUpdateMessage = useCallback(
     async (content: string) => {
       try {
+        const messageToUpdate = messages.find((msg) => msg._id === editingMessageId)
+        if (!messageToUpdate) return
+
         const res = await updateMessage(editingMessageId!, content)
-        if(res.status === "success") {
-          setMessages((prev) =>
-            prev.map((message) =>
-              message._id === editingMessageId
-                ? {
-                    ...message,
-                    content,
-                    updatedAt: res.updatedAt,
-                  }
-                : message
-            )
-          )
+        if (res.status === 'success') {
+          const updatedMessage = {
+            ...messageToUpdate,
+            content,
+            updatedAt: res.updatedAt || new Date().toISOString()
+          }
+
+          // Update in local state
+          setMessages((prev) => prev.map((message) => (message._id === editingMessageId ? updatedMessage : message)))
+
+          // Send via socket
+          socketEditMessage(updatedMessage)
+
           setEditingMessageId(null)
         }
       } catch (error: any) {
         toast.error(error.response?.data?.message || ErrorMessage)
       }
     },
-    [editingMessageId]
+    [editingMessageId, messages]
   )
 
-  const handleDeleteMessage = useCallback( 
+  const handleDeleteMessage = useCallback(
     async (messageId: string) => {
       try {
+        const messageToDelete = messages.find((msg) => msg._id === messageId)
+        if (!messageToDelete) return
+
         const res = await deleteMessage(messageId)
-        if(res.status === "success"){
+        if (res.status === 'success') {
+          // Remove from local state
           setMessages((prev) => prev.filter((message) => message._id !== messageId))
+
+          // Send via socket
+          socketDeleteMessage(messageToDelete)
         }
-      } catch (error: any){
+      } catch (error: any) {
         toast.error(error.response?.data?.message || ErrorMessage)
       }
-  }, [])
+    },
+    [messages]
+  )
 
   const handleReactToMessage = useCallback((messageId: string, emoji: string) => {
     setMessages((prev) =>
@@ -223,7 +296,7 @@ const ChatArea: React.FC = () => {
   if (isLoading) {
     return (
       <div className='flex-1 flex flex-col h-screen'>
-        <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} />
+        <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} onlineUsers={onlineUsers} />
         <div className='flex-1 flex items-center justify-center'>
           <div className='h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin'></div>
         </div>
@@ -233,7 +306,7 @@ const ChatArea: React.FC = () => {
 
   return (
     <div className='flex-1 flex flex-col h-screen'>
-      <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} />
+      <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} onlineUsers={onlineUsers} />
 
       <div className='flex-1 overflow-y-auto'>
         <div className='py-4'>
@@ -243,10 +316,16 @@ const ChatArea: React.FC = () => {
                 return (
                   <div key={message._id} className='py-2 px-4'>
                     <div className='flex items-center mb-2'>
-                      <span className='font-semibold'>{message.senderId.name}</span>
+                      <span className='font-semibold'>
+                        {typeof message.senderId === 'string' ? 'Unknown User' : message.senderId.name}
+                      </span>
                     </div>
                     <MessageInput
-                      onSendMessage={handleUpdateMessage}
+                      onSendMessage={(content) => {
+                        if (typeof content === 'string') {
+                          handleUpdateMessage(content)
+                        }
+                      }}
                       isEditing={true}
                       initialContent={message.content}
                       onCancelEdit={() => setEditingMessageId(null)}
@@ -263,6 +342,7 @@ const ChatArea: React.FC = () => {
                   onEdit={handleEditMessage}
                   onDelete={handleDeleteMessage}
                   onReact={handleReactToMessage}
+                  isOnline={typeof message.senderId !== 'string' && onlineUsers.includes(message.senderId._id)}
                 />
               )
             })
@@ -274,6 +354,7 @@ const ChatArea: React.FC = () => {
               </div>
             </div>
           )}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
@@ -282,6 +363,7 @@ const ChatArea: React.FC = () => {
           onSendMessage={handleSendMessage}
           onAttachFile={handleAttachFile}
           onMessageSent={() => fetchMessages(false)}
+          conversationId={conversationId}
         />
       )}
     </div>

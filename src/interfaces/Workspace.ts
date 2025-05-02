@@ -19,6 +19,7 @@ export interface IChannel {
   conversationId: string
 }
 
+// Cập nhật interface ISender và IMessage để hỗ trợ cả string và object
 export interface ISender {
   _id: string
   name: string
@@ -28,7 +29,7 @@ export interface ISender {
 export interface IMessage {
   _id: string
   content: string
-  senderId: ISender
+  senderId: ISender | string // Có thể là object hoặc string ID
   conversationId: string
   reactions?: IReaction[]
   attachments?: IAttachment[]

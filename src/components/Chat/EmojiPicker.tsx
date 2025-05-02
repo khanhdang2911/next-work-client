@@ -9,200 +9,175 @@ interface EmojiPickerProps {
 
 const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose }) => {
   const pickerRef = useRef<HTMLDivElement>(null)
+  const [searchTerm, setSearchTerm] = useState('')
 
-  // Common emojis
-  const emojis = [
-    '👍',
-    '👎',
-    '😀',
-    '😃',
-    '😄',
-    '😁',
-    '😆',
-    '😅',
-    '🤣',
-    '😂',
-    '🙂',
-    '🙃',
-    '😉',
-    '😊',
-    '😇',
-    '🥰',
-    '😍',
-    '🤩',
-    '😘',
-    '😗',
-    '😚',
-    '😙',
-    '😋',
-    '😛',
-    '😜',
-    '😝',
-    '🤑',
-    '🤗',
-    '🤭',
-    '🤫',
-    '🤔',
-    '🤐',
-    '🤨',
-    '😐',
-    '😑',
-    '😶',
-    '😏',
-    '😒',
-    '🙄',
-    '😬',
-    '🤥',
-    '😌',
-    '😔',
-    '😪',
-    '🤤',
-    '😴',
-    '😷',
-    '🤒',
-    '🤕',
-    '🤢',
-    '🤮',
-    '🤧',
-    '🥵',
-    '🥶',
-    '🥴',
-    '😵',
-    '🤯',
-    '🤠',
-    '🥳',
-    '😎',
-    '🤓',
-    '🧐',
-    '😕',
-    '😟',
-    '🙁',
-    '☹️',
-    '😮',
-    '😯',
-    '😲',
-    '😳',
-    '🥺',
-    '😦',
-    '😧',
-    '😨',
-    '😰',
-    '😥',
-    '😢',
-    '😭',
-    '😱',
-    '😖',
-    '😣',
-    '😞',
-    '😓',
-    '😩',
-    '😫',
-    '🥱',
-    '😤',
-    '😡',
-    '😠',
-    '🤬',
-    '👋',
-    '🤚',
-    '✋',
-    '🖖',
-    '👌',
-    '🤌',
-    '🤏',
-    '✌️',
-    '🤞',
-    '🤟',
-    '🤘',
-    '🤙',
-    '👈',
-    '👉',
-    '👆',
-    '🖕',
-    '👇',
-    '☝️',
-    '👍',
-    '👎',
-    '✊',
-    '👊',
-    '🤛',
-    '🤜',
-    '👏',
-    '🙌',
-    '👐',
-    '🤲',
-    '🤝',
-    '🙏',
-    '✍️',
-    '💅',
-    '🤳',
-    '💪',
-    '🦾',
-    '🦿',
-    '🦵',
-    '🦶',
-    '👂',
-    '🦻',
-    '👃',
-    '🫀',
-    '🫁',
-    '🧠',
-    '🦷',
-    '🦴',
-    '👀',
-    '👁️',
-    '👅',
-    '👄',
-    '💋',
-    '🩸',
-    '❤️',
-    '🧡',
-    '💛',
-    '💚',
-    '💙',
-    '💜',
-    '🤎',
-    '🖤',
-    '🤍',
-    '💔',
-    '❤️‍🔥',
-    '❤️‍🩹',
-    '❣️',
-    '💕',
-    '💞',
-    '💓',
-    '💗',
-    '💖',
-    '💘',
-    '💝',
-    '💟',
-    '♥️',
-    '💯',
-    '💢',
-    '💥',
-    '💫',
-    '💦',
-    '💨',
-    '🕳️',
-    '💣',
-    '💬',
-    '👁️‍🗨️',
-    '🗨️',
-    '🗯️',
-    '💭',
-    '💤',
-    '👋',
-    '🤚'
-  ]
-
-  // Categories for organization
-  const categories = [
-    { name: 'Smileys & Emotion', emojis: emojis.slice(0, 40) },
-    { name: 'People & Body', emojis: emojis.slice(40, 80) },
-    { name: 'Symbols', emojis: emojis.slice(80, 120) },
-    { name: 'Recently Used', emojis: emojis.slice(0, 10) }
+  // Common emojis grouped by category
+  const emojiCategories = [
+    {
+      name: 'Smileys',
+      emojis: [
+        '😀',
+        '😃',
+        '😄',
+        '😁',
+        '😆',
+        '😅',
+        '🤣',
+        '😂',
+        '🙂',
+        '🙃',
+        '😉',
+        '😊',
+        '😇',
+        '🥰',
+        '😍',
+        '🤩',
+        '😘',
+        '😗',
+        '😚',
+        '😙'
+      ]
+    },
+    {
+      name: 'Gestures',
+      emojis: [
+        '👍',
+        '👎',
+        '👌',
+        '✌️',
+        '🤞',
+        '🤟',
+        '🤘',
+        '🤙',
+        '👈',
+        '👉',
+        '👆',
+        '👇',
+        '☝️',
+        '👋',
+        '🤚',
+        '🖐️',
+        '✋',
+        '🖖',
+        '👏',
+        '🙌'
+      ]
+    },
+    {
+      name: 'Faces',
+      emojis: [
+        '😏',
+        '😒',
+        '😞',
+        '😔',
+        '😟',
+        '😕',
+        '🙁',
+        '☹️',
+        '😣',
+        '😖',
+        '😫',
+        '😩',
+        '🥺',
+        '😢',
+        '😭',
+        '😤',
+        '😠',
+        '😡',
+        '🤬',
+        '🤯'
+      ]
+    },
+    {
+      name: 'Animals',
+      emojis: [
+        '🐶',
+        '🐱',
+        '🐭',
+        '🐹',
+        '🐰',
+        '🦊',
+        '🐻',
+        '🐼',
+        '🐨',
+        '🐯',
+        '🦁',
+        '🐮',
+        '🐷',
+        '🐸',
+        '🐵',
+        '🙈',
+        '🙉',
+        '🙊',
+        '🐒',
+        '🦆'
+      ]
+    },
+    {
+      name: 'Food',
+      emojis: [
+        '🍎',
+        '🍐',
+        '🍊',
+        '🍋',
+        '🍌',
+        '🍉',
+        '🍇',
+        '🍓',
+        '🍈',
+        '🍒',
+        '🍑',
+        '🥭',
+        '🍍',
+        '🥥',
+        '🥝',
+        '🍅',
+        '🍆',
+        '🥑',
+        '🥦',
+        '🥬'
+      ]
+    },
+    {
+      name: 'Objects',
+      emojis: [
+        '❤️',
+        '🧡',
+        '💛',
+        '💚',
+        '💙',
+        '💜',
+        '🖤',
+        '💔',
+        '💕',
+        '💞',
+        '💓',
+        '💗',
+        '💖',
+        '💘',
+        '💝',
+        '💟',
+        '🌟',
+        '⭐',
+        '🔥',
+        '💯'
+      ]
+    }
   ]
 
   const [activeCategory, setActiveCategory] = useState(0)
+  const [filteredEmojis, setFilteredEmojis] = useState<string[]>(emojiCategories[0].emojis)
+
+  // Filter emojis based on search term
+  useEffect(() => {
+    if (searchTerm) {
+      // Flatten all emojis and filter
+      const allEmojis = emojiCategories.flatMap((category) => category.emojis)
+      setFilteredEmojis(allEmojis)
+    } else {
+      setFilteredEmojis(emojiCategories[activeCategory].emojis)
+    }
+  }, [searchTerm, activeCategory])
 
   useEffect(() => {
     // Close emoji picker when clicking outside
@@ -218,20 +193,36 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose }) => 
     }
   }, [onClose])
 
+  const handleCategoryChange = (index: number) => {
+    setActiveCategory(index)
+    setSearchTerm('')
+    setFilteredEmojis(emojiCategories[index].emojis)
+  }
+
   return (
     <div
       ref={pickerRef}
-      className='absolute z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-64'
+      className='absolute bottom-16 z-50 bg-white rounded-lg shadow-lg border border-gray-200 w-72'
       onClick={(e) => e.stopPropagation()}
     >
       <div className='p-2 border-b'>
+        <input
+          type='text'
+          placeholder='Search emojis...'
+          className='w-full p-2 text-sm border rounded-md'
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
+      <div className='p-2 border-b'>
         <div className='flex space-x-1 overflow-x-auto'>
-          {categories.map((category, index) => (
+          {emojiCategories.map((category, index) => (
             <Button
               key={category.name}
               color={activeCategory === index ? 'blue' : 'light'}
               size='xs'
-              onClick={() => setActiveCategory(index)}
+              onClick={() => handleCategoryChange(index)}
               className='whitespace-nowrap'
             >
               {category.name}
@@ -242,10 +233,10 @@ const EmojiPicker: React.FC<EmojiPickerProps> = ({ onEmojiSelect, onClose }) => 
 
       <div className='p-2 max-h-60 overflow-y-auto'>
         <div className='grid grid-cols-8 gap-1'>
-          {categories[activeCategory].emojis.map((emoji, index) => (
+          {filteredEmojis.map((emoji, index) => (
             <button
               key={index}
-              className='w-6 h-6 flex items-center justify-center hover:bg-gray-100 rounded'
+              className='w-7 h-7 flex items-center justify-center hover:bg-gray-100 rounded text-lg'
               onClick={() => {
                 onEmojiSelect(emoji)
                 onClose()
