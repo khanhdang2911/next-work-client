@@ -1,7 +1,7 @@
 import type React from 'react'
 import { useState, useRef, useEffect } from 'react'
 import { Button, Tooltip } from 'flowbite-react'
-import { HiPaperClip, HiEmojiHappy, HiCode, HiAtSymbol, HiPaperAirplane } from 'react-icons/hi'
+import { HiPaperClip, HiEmojiHappy, HiCode, HiPaperAirplane } from 'react-icons/hi'
 import { HiListBullet } from 'react-icons/hi2'
 import EmojiPicker from './EmojiPicker'
 import FileUploadModal from './FileUploadModal'
@@ -9,14 +9,16 @@ import { useParams } from 'react-router-dom'
 import { createMessage } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
+import type { IMessage } from '../../interfaces/Workspace'
 
 interface MessageInputProps {
-  onSendMessage: (content: string) => void
+  onSendMessage: (content: string | IMessage) => void | Promise<void> | ((message: IMessage) => void)
   onAttachFile?: (file: File) => void
   isEditing?: boolean
   initialContent?: string
   onCancelEdit?: () => void
   onMessageSent?: () => void
+  conversationId?: string
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -25,7 +27,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
   isEditing = false,
   initialContent = '',
   onCancelEdit,
-  onMessageSent
+  onMessageSent,
+  conversationId
 }) => {
   const [message, setMessage] = useState(initialContent)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -33,7 +36,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { conversationId, workspaceId } = useParams<{ conversationId: string; workspaceId: string }>()
+  const { workspaceId } = useParams<{ workspaceId: string }>()
   const [currentChannel, setCurrentChannel] = useState<any>(null)
   const [currentDirectMessage, setCurrentDirectMessage] = useState<any>(null)
 
@@ -103,6 +106,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
       const response = await createMessage(conversationId, message, selectedFiles)
 
       if (response.status === 'success') {
+        // Pass the new message to the parent component
+        onSendMessage(response.data)
+
         setMessage('')
         setSelectedFiles([])
         if (onMessageSent) {
@@ -209,12 +215,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
             <HiCode className='h-4 w-4' />
           </Button>
         </Tooltip>
-
-        <Tooltip content='Mention'>
-          <Button color='gray' pill size='xs' onClick={() => insertFormatting('@')} type='button'>
-            <HiAtSymbol className='h-4 w-4' />
-          </Button>
-        </Tooltip>
       </div>
 
       {selectedFiles.length > 0 && (
@@ -255,7 +255,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
             </Tooltip>
 
             {showEmojiPicker && (
-              <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
+              <div className='absolute bottom-full right-0 mb-2 z-50'>
+                <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
+              </div>
             )}
           </div>
 

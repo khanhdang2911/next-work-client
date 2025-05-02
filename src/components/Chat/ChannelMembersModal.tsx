@@ -17,9 +17,10 @@ interface ChannelMembersModalProps {
   onClose: () => void
   channelId?: string
   workspaceId?: string
+  onlineUsers?: string[]
 }
 
-const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClose, channelId }) => {
+const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClose, channelId, onlineUsers = [] }) => {
   const [members, setMembers] = useState<IChannelMember[]>([])
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
@@ -28,7 +29,7 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
   const currentUserId = auth.user?._id
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
-  
+
   const handleDeleteClick = (userId: string) => {
     setSelectedUserId(userId)
     setShowDeleteConfirm(true)
@@ -45,18 +46,15 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
   const handleCancelDelete = () => {
     setShowDeleteConfirm(false)
   }
-  
 
-  const isCurrentUserAdmin = members.some(
-    (member) => member._id === currentUserId && member.admin
-  )
+  const isCurrentUserAdmin = members.some((member) => member._id === currentUserId && member.admin)
 
   const handleDeleteMember = async (userId: string) => {
     if (!channelId) return
-    
+
     try {
       const res = await deleteMemberChannel(channelId, userId)
-      if(res.status === 'success') {
+      if (res.status === 'success') {
         toast.success(res.message)
         setMembers((prev) => prev.filter((member) => member._id !== userId))
       }
@@ -89,9 +87,7 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
     onClose()
     navigate(`/profile/${userId}`)
   }
-  const getStatusColor = (status: string) => {
-    return status === 'Online' ? 'bg-green-500' : 'bg-yellow-500'
-  }
+
 
   const formatJoinDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -111,56 +107,65 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
             {members.length === 0 ? (
               <div className='text-center py-6 text-gray-500 text-base'>No members found</div>
             ) : (
-              members.map((member) => (
-                <div key={member._id} className='flex items-center p-4 hover:bg-gray-50 rounded-lg shadow-sm'>
-                  <div className='relative'>
-                    <Avatar img={member.avatar} rounded size='lg' />
-                    <span
-                      className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ${getStatusColor(
-                        member.status
-                      )} border-2 border-white`}
-                    ></span>
-                  </div>
-                  <div className='ml-4 flex-1'>
-                    <div className='flex items-center'>
-                      <div className='font-semibold text-base'>{member.name}</div>
-                      {member.admin && (
-                        <Badge color='blue' className='ml-3 text-xs'>
-                          Admin
-                        </Badge>
+              members.map((member) => {
+                const isUserOnline = onlineUsers.includes(member._id)
+
+                return (
+                  <div key={member._id} className='flex items-center p-4 hover:bg-gray-50 rounded-lg shadow-sm'>
+                    <div className='relative'>
+                      <Avatar img={member.avatar} rounded size='lg' />
+                      <span
+                        className={`absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full ${
+                          isUserOnline ? 'bg-green-500' : 'bg-yellow-500'
+                        } border-2 border-white`}
+                      ></span>
+                    </div>
+                    <div className='ml-4 flex-1'>
+                      <div className='flex items-center'>
+                        <div className='font-semibold text-base'>{member.name}</div>
+                        {member.admin && (
+                          <Badge color='blue' className='ml-3 text-xs'>
+                            Admin
+                          </Badge>
+                        )}
+                        {isUserOnline && (
+                          <Badge color='success' className='ml-3 text-xs'>
+                            Online
+                          </Badge>
+                        )}
+                      </div>
+                      <div className='text-sm text-gray-600'>{member.email}</div>
+                      <div className='text-xs text-gray-400'>Joined {formatJoinDate(member.joinedAt)}</div>
+                    </div>
+                    <div className='flex items-center gap-3'>
+                      <Button size='xs' color='light' onClick={() => handleViewProfile(member._id)}>
+                        View
+                      </Button>
+                      <Button size='xs' color='light'>
+                        <HiMail className='h-4 w-4' />
+                      </Button>
+                      {isCurrentUserAdmin && !member.admin && (
+                        <Button
+                          size='xs'
+                          color='failure'
+                          onClick={() => handleDeleteClick(member._id)}
+                          title='Delete member'
+                        >
+                          <HiTrash className='h-4 w-4' />
+                        </Button>
                       )}
                     </div>
-                    <div className='text-sm text-gray-600'>{member.email}</div>
-                    <div className='text-xs text-gray-400'>Joined {formatJoinDate(member.joinedAt)}</div>
                   </div>
-                  <div className='flex items-center gap-3'>
-                    <Button size='xs' color='light' onClick={() => handleViewProfile(member._id)}>
-                      View
-                    </Button>
-                    <Button size='xs' color='light'>
-                      <HiMail className='h-4 w-4' />
-                    </Button>
-                    {isCurrentUserAdmin && !member.admin && (
-                      <Button 
-                        size='xs' 
-                        color='failure' 
-                        onClick={() => handleDeleteClick(member._id)}
-                        title="Delete member"
-                      >
-                        <HiTrash className='h-4 w-4' />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              ))
+                )
+              })
             )}
           </div>
         )}
       </Modal.Body>
       <ConfirmDialog
         show={showDeleteConfirm}
-        title="Delete Member"
-        message="Are you sure you want to delete this member?"
+        title='Delete Member'
+        message='Are you sure you want to delete this member?'
         onConfirm={handleConfirmDelete}
         onCancel={handleCancelDelete}
       />

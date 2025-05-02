@@ -8,23 +8,30 @@ import { useNavigate } from 'react-router-dom'
 import { getAuthSelector } from '../../redux/selectors'
 import { useSelector } from 'react-redux'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import { toast } from 'react-toastify'
 
 interface MessageItemProps {
   message: IMessage
-  user: ISender
+  user: ISender | string
   onEdit: (messageId: string) => void
   onDelete: (messageId: string) => void
   onReact: (messageId: string, emoji: string) => void
   onViewProfile?: (userId: string) => void
+  isOnline?: boolean
 }
 
 const MessageItem: React.FC<MessageItemProps> = React.memo(
-  ({ message, user, onEdit, onDelete, onReact}) => {
+  ({ message, user, onEdit, onDelete, onReact, isOnline = false }) => {
     const [showActions, setShowActions] = useState(false)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
     const emojiButtonRef = useRef<HTMLButtonElement>(null)
     const navigate = useNavigate()
     const auth: any = useSelector(getAuthSelector)
+
+    // Check if user is a string or an object
+    const isUserObject = typeof user !== 'string'
+
     const formattedContent = useMemo(() => {
       // Replace **text** with <strong>text</strong>
       let content = message.content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
@@ -39,10 +46,9 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       return message.createdAt !== message.updatedAt
     }, [message.createdAt, message.updatedAt])
 
-    const isCurrentUser = user._id === auth?.user._id
+    // Safely determine if current user is the message sender
+    const isCurrentUser = isUserObject && user._id === auth?.user?._id
     const messageTime = formatTime(message.createdAt)
-
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
     const handleDeleteClick = () => {
       setShowDeleteConfirm(true)
@@ -68,6 +74,11 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     }
 
     const handleViewProfile = () => {
+      if (!isUserObject) {
+        toast.error('Can not view profile of unknown user')
+        return
+      }
+
       if (isCurrentUser) {
         navigate('/profile')
       } else {
@@ -80,14 +91,35 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       return type.startsWith('image/')
     }
 
+    // If user is not an object, render a simplified message
+    if (!isUserObject) {
+      return (
+        <div className='py-2 px-4 hover:bg-gray-100 flex relative'>
+          <div className='mr-3'>
+            <Avatar rounded size='md' />
+          </div>
+          <div className='flex-1'>
+            <div className='flex items-center'>
+              <span className='font-semibold text-gray-500'>Người dùng không xác định</span>
+              <span className='text-gray-500 text-xs ml-2'>{messageTime}</span>
+            </div>
+            <div className='mt-1 text-sm' dangerouslySetInnerHTML={{ __html: formattedContent }} />
+          </div>
+        </div>
+      )
+    }
+
     return (
       <div
         className='py-2 px-4 hover:bg-gray-100 flex relative'
         onMouseEnter={() => setShowActions(true)}
         onMouseLeave={() => setShowActions(false)}
       >
-        <div className='cursor-pointer' onClick={handleViewProfile}>
+        <div className='cursor-pointer relative' onClick={handleViewProfile}>
           <Avatar img={user.avatar} rounded size='md' className='mr-3' />
+          {isOnline && (
+            <span className='absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full'></span>
+          )}
         </div>
 
         <div className='flex-1'>
@@ -96,9 +128,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
               {user.name}
             </span>
             <span className='text-gray-500 text-xs ml-2'>{messageTime}</span>
-            {isEdited && (
-              <span className="text-purple-700 text-xs ml-1 font-semibold">(Edited)</span>
-            )}
+            {isEdited && <span className='text-purple-700 text-xs ml-1 font-semibold'>(Edited)</span>}
 
             {showActions && (
               <div className='ml-2 flex'>
@@ -156,8 +186,8 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                 </Dropdown>
                 <ConfirmDialog
                   show={showDeleteConfirm}
-                  title="Delete Message"
-                  message="Are you sure you want to delete this message?"
+                  title='Delete Message'
+                  message='Are you sure you want to delete this message?'
                   onConfirm={handleConfirmDelete}
                   onCancel={handleCancelDelete}
                 />

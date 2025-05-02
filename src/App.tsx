@@ -5,11 +5,20 @@ import PrivateRoute from './components/PrivateRoute/PrivateRoute'
 import { injectAuth0Functions } from './config/httpRequest'
 import { useAuth0 } from '@auth0/auth0-react'
 import ToastCustom from './components/ToastCustom.tsx/ToastCustom'
+import { disconnectSocket } from './config/socket'
+
 function App() {
   const { logout } = useAuth0()
+
   useEffect(() => {
     injectAuth0Functions(logout)
-  }, [])
+
+    // Cleanup socket connection on app unmount
+    return () => {
+      disconnectSocket()
+    }
+  }, [logout])
+
   return (
     <>
       <Router>

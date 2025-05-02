@@ -1,6 +1,6 @@
 import type React from 'react'
 import { useState } from 'react'
-import { Button, Tooltip } from 'flowbite-react'
+import { Button, Tooltip, Badge } from 'flowbite-react'
 import {
   HiHashtag,
   HiLockClosed,
@@ -19,9 +19,10 @@ import ChannelInviteModal from './ChannelInviteModel'
 interface ChatHeaderProps {
   channel?: IChannel | null
   directMessage?: IDirectMessage | null
+  onlineUsers?: string[]
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage}) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineUsers = [] }) => {
   const navigate = useNavigate()
   const { workspaceId } = useParams<{ workspaceId: string; conversationId: string }>()
   const [showMembersModal, setShowMembersModal] = useState(false)
@@ -38,6 +39,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage}) => {
   const handleInviteMembers = () => {
     navigate(`/workspace/${workspaceId}/invite`)
   }
+
+  // Check if direct message user is online
+  const isUserOnline = directMessage && onlineUsers.includes(directMessage._id)
 
   return (
     <div className='border-b p-3 flex items-center'>
@@ -58,15 +62,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage}) => {
               className='w-5 h-5 rounded-full mr-2'
             />
             <h2 className='font-semibold'>{directMessage.name}</h2>
-            <span
-              className={`ml-2 w-2 h-2 rounded-full ${
-                directMessage.status === 'Online' ? 'bg-green-500' : 'bg-yellow-500'
-              }`}
-            ></span>
-            <span className='ml-1 text-gray-500 text-sm'>{directMessage.status}</span>
+            <span className={`ml-2 w-2 h-2 rounded-full ${isUserOnline ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+            <span className='ml-1 text-gray-500 text-sm'>{isUserOnline ? 'Online' : 'Away'}</span>
           </div>
         )}
-
       </div>
 
       <div className='flex items-center space-x-2'>
@@ -91,6 +90,11 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage}) => {
         <Tooltip content='View Members'>
           <Button color='gray' pill size='sm' onClick={handleViewMembers}>
             <HiUsers className='h-4 w-4' />
+            {onlineUsers.length > 0 && (
+              <Badge color='success' className='ml-1'>
+                {onlineUsers.length}
+              </Badge>
+            )}
           </Button>
         </Tooltip>
 
@@ -122,6 +126,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage}) => {
             onClose={() => setShowMembersModal(false)}
             channelId={channel._id}
             workspaceId={workspaceId}
+            onlineUsers={onlineUsers}
           />
 
           <ChannelInviteModal
