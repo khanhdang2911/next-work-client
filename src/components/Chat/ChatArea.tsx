@@ -72,15 +72,12 @@ const ChatArea: React.FC = () => {
       if (!conversationId) return
 
       try {
-        console.log('Fetching DM details for conversation:', conversationId)
-        const res = await getAllDmConversationsOfUser()
+        const res = await getAllDmConversationsOfUser(workspaceId || '')
         if (res.status === 'success') {
           const dm = res.data.find((dm: IDirectMessage) => dm.conversationId === conversationId)
           if (dm) {
-            console.log('Found DM:', dm)
             setCurrentDirectMessage(dm)
           } else {
-            console.log('DM not found for conversationId:', conversationId)
             setCurrentDirectMessage(null)
           }
         }
@@ -90,7 +87,7 @@ const ChatArea: React.FC = () => {
     }
 
     fetchCurrentDirectMessage()
-  }, [conversationId])
+  }, [conversationId, workspaceId])
 
   const fetchMessages = useCallback(
     async (showLoadingState = true) => {
@@ -101,7 +98,6 @@ const ChatArea: React.FC = () => {
       }
 
       try {
-        console.log('Fetching messages for conversation:', conversationId)
         const res = await getMessagebyConversationId(conversationId)
         if (res.status === 'success') {
           setMessages(res.data)
@@ -173,8 +169,7 @@ const ChatArea: React.FC = () => {
     setTimeout(scrollToBottom, 100)
   }, [])
 
-  const handleAttachFile = useCallback(() => {
-  }, [currentChannel?._id, directMessageId])
+  const handleAttachFile = useCallback(() => {}, [currentChannel?._id, directMessageId])
 
   const handleEditMessage = useCallback((messageId: string) => {
     setEditingMessageId(messageId)

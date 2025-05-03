@@ -23,23 +23,21 @@ export const formatMessageContent = (content: string) => {
 
   return formattedContent
 }
-
 export const getInitials = (name: string) => {
-  return name
-    .split(' ')
-    .map((part) => part[0])
-    .join('')
-    .toUpperCase()
+  const parts = name.split(' ');
+  return parts.length > 1
+    ? (parts[0][0] + parts[parts.length - 1][0]).toUpperCase()
+    : parts[0][0].toUpperCase();
 }
 
 // Update the getStatusColor function to only handle 'online' and 'away'
 export const getStatusColor = (status: string) => {
   switch (status) {
-    case 'online':
+    case 'Online':
       return 'bg-green-500'
-    case 'away':
+    case 'Away':
       return 'bg-yellow-500'
     default:
-      return 'bg-gray-400'
+      return 'bg-red-400'
   }
 }
