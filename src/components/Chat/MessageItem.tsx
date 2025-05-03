@@ -3,12 +3,13 @@ import { Avatar, Button, Dropdown } from 'flowbite-react'
 import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiEye } from 'react-icons/hi'
 import { formatTime } from '../../utils/formatUtils'
 import type { IMessage, ISender } from '../../interfaces/Workspace'
-import EmojiPicker from './EmojiPicker'
 import { useNavigate } from 'react-router-dom'
 import { getAuthSelector } from '../../redux/selectors'
 import { useSelector } from 'react-redux'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import { toast } from 'react-toastify'
+import EmojiPicker from 'emoji-picker-react'
+import type { EmojiClickData } from 'emoji-picker-react'
 
 interface MessageItemProps {
   message: IMessage
@@ -25,6 +26,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     const [showActions, setShowActions] = useState(false)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const emojiPickerRef = useRef<HTMLDivElement>(null)
     const emojiButtonRef = useRef<HTMLButtonElement>(null)
     const navigate = useNavigate()
     const auth: any = useSelector(getAuthSelector)
@@ -50,6 +52,25 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     const isCurrentUser = isUserObject && user._id === auth?.user?._id
     const messageTime = formatTime(message.createdAt)
 
+    // Close emoji picker when clicking outside
+    React.useEffect(() => {
+      const handleClickOutside = (event: MouseEvent) => {
+        if (
+          emojiPickerRef.current &&
+          !emojiPickerRef.current.contains(event.target as Node) &&
+          emojiButtonRef.current &&
+          !emojiButtonRef.current.contains(event.target as Node)
+        ) {
+          setShowEmojiPicker(false)
+        }
+      }
+
+      document.addEventListener('mousedown', handleClickOutside)
+      return () => {
+        document.removeEventListener('mousedown', handleClickOutside)
+      }
+    }, [])
+
     const handleDeleteClick = () => {
       setShowDeleteConfirm(true)
     }
@@ -68,8 +89,8 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       setShowEmojiPicker(!showEmojiPicker)
     }
 
-    const handleEmojiSelect = (emoji: string) => {
-      onReact(message._id, emoji)
+    const handleEmojiSelect = (emojiData: EmojiClickData) => {
+      onReact(message._id, emojiData.emoji)
       setShowEmojiPicker(false)
     }
 
@@ -145,8 +166,19 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                   </Button>
 
                   {showEmojiPicker && (
-                    <div className='absolute z-50 top-6 left-0'>
-                      <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
+                    <div
+                      ref={emojiPickerRef}
+                      className='absolute z-50 top-6 left-0'
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <EmojiPicker
+                        onEmojiClick={handleEmojiSelect}
+                        searchDisabled={false}
+                        skinTonesDisabled
+                        width={280}
+                        height={350}
+                        previewConfig={{ showPreview: false }}
+                      />
                     </div>
                   )}
                 </div>
@@ -200,10 +232,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
           {message.attachments && message.attachments.length > 0 && (
             <div className='mt-2'>
               {message.attachments.map((attachment) => (
-                <div key={attachment.id} className='mt-2'>
+                <div key={attachment.url} className='mt-2'>
                   {isImageFile(attachment.type) ? (
                     // Display images directly
-                    <div className='mt-2'>
+                    <div key={`image-${attachment.name}`} className='mt-2'>
                       <img
                         src={attachment.url || '/placeholder.svg'}
                         alt={attachment.name}
@@ -216,7 +248,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                     </div>
                   ) : (
                     // Display other files as downloadable items
-                    <div className='border border-gray-200 rounded-md p-3 bg-gray-50 inline-block'>
+                    <div
+                      key={`file-${attachment.url}`}
+                      className='border border-gray-200 rounded-md p-3 bg-gray-50 inline-block'
+                    >
                       <div className='flex items-center'>
                         <div className='mr-3 text-blue-500'>
                           <svg className='h-8 w-8' fill='currentColor' viewBox='0 0 20 20'>

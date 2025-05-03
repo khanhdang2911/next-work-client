@@ -1,7 +1,7 @@
 import type React from 'react'
 import { useState, useEffect } from 'react'
 import { Avatar, Button, Card, Badge } from 'flowbite-react'
-import { HiMail, HiClock, HiOfficeBuilding, HiUserGroup } from 'react-icons/hi'
+import { HiClock, HiOfficeBuilding, HiUserGroup } from 'react-icons/hi'
 import { getStatusColor } from '../../utils/formatUtils'
 import { useNavigate, useParams } from 'react-router-dom'
 import { getUserById } from '../../api/auth.api'
@@ -59,11 +59,9 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
   }
 
   const statusColor = getStatusColor(user.status)
-  const isCurrentUser = !profileId || profileId === auth?.user?._id
 
   // Format dates
-  const userJoinDate = new Date(user.createdAt || Date.now()).toLocaleDateString()
-  const userLastActive = user.lastSeen ? new Date(user.lastSeen).toLocaleString() : 'Recently'
+  const userJoinDate = new Date(user.createdAt ?? Date.now()).toLocaleDateString()
 
   return (
     <div className='max-w-4xl mx-auto p-6'>
@@ -84,34 +82,12 @@ const UserProfile: React.FC<UserProfileProps> = ({ userId }) => {
                 <h2 className='text-2xl font-bold'>{user.name}</h2>
                 <p className='text-gray-500'>{user.email}</p>
               </div>
-
-              <div className='mt-4 md:mt-0 flex flex-wrap justify-center md:justify-end gap-2'>
-                {isCurrentUser ? (
-                  <Button color='blue' onClick={() => navigate('/profile/edit')}>
-                    Edit Profile
-                  </Button>
-                ) : (
-                  <>
-                    <Button color='blue'>
-                      <HiMail className='mr-2 h-4 w-4' />
-                      Message
-                    </Button>
-                  </>
-                )}
-              </div>
             </div>
 
             <div className='mt-4 flex flex-wrap justify-center md:justify-start gap-2'>
               <Badge color='gray' className='flex items-center'>
                 <HiClock className='mr-1 h-4 w-4' />
                 Joined {userJoinDate}
-              </Badge>
-              <Badge color='gray' className='flex items-center'>
-                <HiClock className='mr-1 h-4 w-4' />
-                Last active {userLastActive}
-              </Badge>
-              <Badge color={user.status === 'online' ? 'success' : 'warning'} className='flex items-center'>
-                {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
               </Badge>
             </div>
           </div>

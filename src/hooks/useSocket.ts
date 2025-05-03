@@ -55,12 +55,10 @@ export const useSocket = () => {
     const cleanupOnlineListeners = setupOnlineUsersListeners(
       // Handle initial list of online users
       (userIds) => {
-        console.log('Users online:', userIds)
         setOnlineUsers(userIds)
       },
       // Handle user coming online
       (newUserId) => {
-        console.log('User online:', newUserId)
         setOnlineUsers((prev) => {
           if (prev.includes(newUserId)) return prev
           return [...prev, newUserId]
@@ -68,7 +66,6 @@ export const useSocket = () => {
       },
       // Handle user going offline
       (offlineUserId) => {
-        console.log('User offline:', offlineUserId)
         setOnlineUsers((prev) => prev.filter((id) => id !== offlineUserId))
       }
     )

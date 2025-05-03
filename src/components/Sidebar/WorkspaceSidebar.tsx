@@ -44,7 +44,7 @@ const WorkspaceSidebar: React.FC = () => {
           }
         }
       } catch (error: any) {
-        toast.error(error.response?.data?.message || ErrorMessage)
+        toast.error(error.response?.data?.message ?? ErrorMessage)
       }
     }
 
@@ -62,7 +62,7 @@ const WorkspaceSidebar: React.FC = () => {
           setChannels(res.data)
         }
       } catch (error: any) {
-        toast.error(error.response?.data?.message || ErrorMessage)
+        toast.error(error.response?.data?.message ?? ErrorMessage)
       } finally {
         setIsLoading(false)
       }
@@ -74,15 +74,12 @@ const WorkspaceSidebar: React.FC = () => {
   useEffect(() => {
     const fetchAllDm = async () => {
       try {
-        console.log('Fetching all DMs for workspace:', workspaceId)
-        const res = await getAllDmConversationsOfUser()
+        const res = await getAllDmConversationsOfUser(workspaceId ?? '')
         if (res.status === 'success') {
-          console.log('DMs fetched successfully:', res.data)
           setAlldm(res.data)
         }
       } catch (error: any) {
-        console.error('Error fetching DMs:', error)
-        toast.error(error.response?.data?.message || ErrorMessage)
+        toast.error(error.response?.data?.message ?? ErrorMessage)
       }
     }
 
@@ -96,7 +93,7 @@ const WorkspaceSidebar: React.FC = () => {
       const newChannel: IChannel = {
         _id: `channel${Date.now()}`,
         name,
-        workspaceId: workspaceId || '',
+        workspaceId: workspaceId ?? '',
         description,
         isPrivate,
         createdAt: new Date().toISOString(),
@@ -110,7 +107,7 @@ const WorkspaceSidebar: React.FC = () => {
       toast.success('Channel created successfully!')
       setIsCreateChannelModalOpen(false)
     } catch (error: any) {
-      toast.error(error.response?.data?.message || 'Failed to create channel')
+      toast.error(error.response?.data?.message ?? 'Failed to create channel')
     }
   }
 
@@ -187,9 +184,6 @@ const WorkspaceSidebar: React.FC = () => {
               <HiChevronRight className='h-4 w-4 mr-1' />
             )}
             <span className='text-sm font-medium'>DIRECT MESSAGES</span>
-            <Button color='gray' size='xs' pill className='ml-auto p-1' title='Add Direct Message'>
-              <HiPlus className='h-3 w-3' />
-            </Button>
           </div>
           {directMessagesExpanded && (
             <div className='mt-2 space-y-1'>

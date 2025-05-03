@@ -39,7 +39,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
         resetForm()
         onClose()
       }
-    }, 200)
+    }, 100)
   }
 
   const resetForm = () => {
@@ -75,8 +75,8 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
               onClick={() => fileInputRef.current?.click()}
             >
               <HiUpload className='mx-auto h-12 w-12 text-gray-400' />
-              <p className='mt-2 text-sm text-gray-600'>Click to upload or drag and drop</p>
-              <p className='text-xs text-gray-500'>PDF, DOC, XLS, JPG, PNG (Max. 10MB)</p>
+              <p className='mt-2 text-sm text-gray-600'>Click to upload</p>
+              <p className='text-xs text-gray-500'>PDF, DOC, XLS, JPG, PNG,... (Max. 40MB)</p>
               <input ref={fileInputRef} type='file' className='hidden' onChange={handleFileChange} />
             </div>
           ) : (

@@ -3,13 +3,13 @@ import { useState, useRef, useEffect } from 'react'
 import { Button, Tooltip } from 'flowbite-react'
 import { HiPaperClip, HiEmojiHappy, HiCode, HiPaperAirplane } from 'react-icons/hi'
 import { HiListBullet } from 'react-icons/hi2'
-import EmojiPicker from './EmojiPicker'
 import FileUploadModal from './FileUploadModal'
-import { useParams } from 'react-router-dom'
 import { createMessage } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
 import type { IMessage } from '../../interfaces/Workspace'
+import EmojiPicker from 'emoji-picker-react'
+import type { EmojiClickData } from 'emoji-picker-react'
 
 interface MessageInputProps {
   onSendMessage: (content: string | IMessage) => void | Promise<void> | ((message: IMessage) => void)
@@ -36,9 +36,10 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
-  const { workspaceId } = useParams<{ workspaceId: string }>()
-  const [currentChannel, setCurrentChannel] = useState<any>(null)
-  const [currentDirectMessage, setCurrentDirectMessage] = useState<any>(null)
+  const emojiPickerRef = useRef<HTMLDivElement>(null)
+  const emojiButtonRef = useRef<HTMLButtonElement>(null)
+  // const [currentChannel, setCurrentChannel] = useState<any>(null)
+  // const [currentDirectMessage, setCurrentDirectMessage] = useState<any>(null)
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -46,42 +47,26 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [isEditing])
 
-  // Fetch current channel or DM details for placeholder text
+  // Close emoji picker when clicking outside
   useEffect(() => {
-    const fetchCurrentConversation = async () => {
-      if (!workspaceId || !conversationId) return
-
-      try {
-        // Try to fetch channel first
-        const channelRes = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/channels/${workspaceId}`)
-        const channelData = await channelRes.json()
-
-        if (channelData.status === 'success') {
-          const channel = channelData.data.find((ch: any) => ch.conversationId === conversationId)
-          if (channel) {
-            setCurrentChannel(channel)
-            return
-          }
-        }
-
-        // If not a channel, try to fetch direct message
-        const dmRes = await fetch(`${import.meta.env.VITE_BACKEND_API_URL}/api/conversations/dm`)
-        const dmData = await dmRes.json()
-
-        if (dmData.status === 'success') {
-          const dm = dmData.data.find((dm: any) => dm.conversationId === conversationId)
-          if (dm) {
-            setCurrentDirectMessage(dm)
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching conversation details:', error)
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        emojiPickerRef.current &&
+        !emojiPickerRef.current.contains(event.target as Node) &&
+        emojiButtonRef.current &&
+        !emojiButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowEmojiPicker(false)
       }
     }
 
-    fetchCurrentConversation()
-  }, [workspaceId, conversationId])
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
 
+  // Fetch current channel or DM details for placeholder text
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -151,24 +136,26 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }, 0)
   }
 
-  const handleEmojiSelect = (emoji: string) => {
+  const handleEmojiSelect = (emojiData: EmojiClickData) => {
     if (textareaRef.current) {
       const start = textareaRef.current.selectionStart
-      const newText = message.slice(0, start) + emoji + message.slice(start)
+      const newText = message.slice(0, start) + emojiData.emoji + message.slice(start)
       setMessage(newText)
 
       // Set cursor position after the inserted emoji
       setTimeout(() => {
         if (textareaRef.current) {
           textareaRef.current.focus()
-          const newPosition = start + emoji.length
+          const newPosition = start + emojiData.emoji.length
           textareaRef.current.selectionStart = newPosition
           textareaRef.current.selectionEnd = newPosition
         }
       }, 0)
     } else {
-      setMessage(message + emoji)
+      setMessage(message + emojiData.emoji)
     }
+
+    setShowEmojiPicker(false)
   }
 
   const handleFileUpload = (file: File) => {
@@ -178,15 +165,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
     if (onAttachFile) {
       onAttachFile(file)
     }
-  }
-
-  const getPlaceholderText = () => {
-    if (currentChannel) {
-      return `Message #${currentChannel.name}`
-    } else if (currentDirectMessage) {
-      return `Message ${currentDirectMessage.name}`
-    }
-    return 'Type a message...'
   }
 
   return (
@@ -238,8 +216,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <textarea
           ref={textareaRef}
           className='flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none'
-          placeholder={getPlaceholderText()}
-          rows={1}
+          placeholder={'Type a message...'}
+          rows={2}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}
@@ -249,14 +227,32 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <div className='ml-2 flex items-center space-x-2'>
           <div className='relative'>
             <Tooltip content='Add Emoji'>
-              <Button color='gray' pill size='sm' type='button' onClick={() => setShowEmojiPicker(!showEmojiPicker)}>
+              <Button
+                ref={emojiButtonRef}
+                color='gray'
+                pill
+                size='sm'
+                type='button'
+                onClick={() => setShowEmojiPicker(!showEmojiPicker)}
+              >
                 <HiEmojiHappy className='h-4 w-4' />
               </Button>
             </Tooltip>
 
             {showEmojiPicker && (
-              <div className='absolute bottom-full right-0 mb-2 z-50'>
-                <EmojiPicker onEmojiSelect={handleEmojiSelect} onClose={() => setShowEmojiPicker(false)} />
+              <div
+                ref={emojiPickerRef}
+                className='absolute bottom-full right-0 mb-2 z-50'
+                onClick={(e) => e.stopPropagation()}
+              >
+                <EmojiPicker
+                  onEmojiClick={handleEmojiSelect}
+                  searchDisabled={false}
+                  skinTonesDisabled
+                  width={280}
+                  height={350}
+                  previewConfig={{ showPreview: false }}
+                />
               </div>
             )}
           </div>

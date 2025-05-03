@@ -42,7 +42,7 @@ const WorkspacePage: React.FC = () => {
             } else {
               // If no channels, try to get direct messages
               try {
-                const dmRes = await getAllDmConversationsOfUser()
+                const dmRes = await getAllDmConversationsOfUser(workspaceId)
                 if (dmRes.status === 'success' && dmRes.data.length > 0) {
                   // If we have direct messages, redirect to the first one
                   setRedirectPath(`/workspace/${workspaceId}/dm/${dmRes.data[0].conversationId}`)

@@ -26,8 +26,8 @@ const getChannelsByWorkspaceId = async (_id: string) => {
   return response.data
 }
 
-const getAllDmConversationsOfUser = async () => {
-  const response = await axios.get('/conversations/dm')
+const getAllDmConversationsOfUser = async (workspaceId: string) => {
+  const response = await axios.get(`/conversations/dm/${workspaceId}`)
   return response.data
 }
 
@@ -36,19 +36,19 @@ const getMessagebyConversationId = async (conversationId: string) => {
   return response.data
 }
 
-const updateMessage = async ( messageId: string ,newMessage: string ) => {
+const updateMessage = async (messageId: string, newMessage: string) => {
   const response = await axios.patch(`/messages/${messageId}`, {
     content: newMessage
   })
   return response.data
 }
 
-const deleteMessage = async ( messageId: string ) => {
+const deleteMessage = async (messageId: string) => {
   const response = await axios.delete(`/messages/${messageId}`)
   return response.data
 }
 
-const deleteMemberChannel = async ( channelId: string, userId: string) => {
+const deleteMemberChannel = async (channelId: string, userId: string) => {
   const response = await axios.delete(`/channels/${channelId}/members/${userId}`)
   return response.data
 }
