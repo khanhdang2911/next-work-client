@@ -1,18 +1,29 @@
 import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { Button, Tooltip, Badge, Avatar } from 'flowbite-react'
-import { HiHashtag, HiLockClosed, HiUserAdd, HiSearch, HiUsers, HiX, HiUser, HiMail } from 'react-icons/hi'
+import {
+  HiHashtag,
+  HiInformationCircle,
+  HiPhone,
+  HiVideoCamera,
+  HiUserAdd,
+  HiSearch,
+  HiUsers,
+  HiX,
+  HiUser,
+  HiMail
+} from 'react-icons/hi'
 import type { IChannel, IDirectMessage } from '../../interfaces/Workspace'
 import { useNavigate, useParams } from 'react-router-dom'
 import ChannelMembersModal from './ChannelMembersModal'
 import ChannelInviteModal from './ChannelInviteModal'
+import axios from '../../config/httpRequest'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
 import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
 import { createDirectConversation } from '../../api/conversation.api'
 import useDebounce from '../../hooks/useDebounce'
-import { searchUsersInChannel } from '../../api/user.api'
 
 // Add a new interface for search results
 interface IUserSearchResult {
@@ -73,10 +84,10 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
       setNoResultsFound(false) // Reset no results state before searching
 
       try {
-        const response = await searchUsersInChannel(debouncedSearchQuery, channel._id)
-        if (response.status === 'success') {
-          setSearchResults(response.data)
-          setNoResultsFound(response.data.length === 0)
+        const response = await axios.get(`/users/search/${debouncedSearchQuery}/${channel._id}`)
+        if (response.data.status === 'success') {
+          setSearchResults(response.data.data)
+          setNoResultsFound(response.data.data.length === 0)
         }
       } catch (error: any) {
         toast.error(error.response?.data?.message ?? ErrorMessage)
@@ -167,7 +178,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
       <div className='flex-1'>
         {channel && (
           <div className='flex items-center'>
-            {channel.isPrivate ? <HiLockClosed className='mr-2 h-4 w-4' /> : <HiHashtag className='mr-2 h-4 w-4' />}
+            <HiHashtag className='mr-2 h-4 w-4' />
             <h2 className='font-semibold'>{channel.name}</h2>
             {channel.description && <span className='ml-2 text-gray-500 text-sm'>{channel.description}</span>}
           </div>
@@ -187,9 +198,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
         )}
       </div>
 
-      <div className='flex items-center space-x-2 w-[60%] ml-4'>
+      <div className='flex items-center space-x-2'>
         {/* Search component - Now wider */}
-        <div className='relative flex-grow w-full' ref={searchRef}>
+        <div className='relative flex-grow max-w-md' ref={searchRef}>
           <div className='flex items-center bg-gray-100 rounded-lg px-3 py-1.5 w-full'>
             <HiSearch className='h-4 w-4 text-gray-500' />
             <input
@@ -223,7 +234,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
               {searchResults.map((user) => (
                 <div key={user._id} className='flex items-center p-3 hover:bg-gray-50'>
                   <Avatar
-                    img={user.avatar ?? '/placeholder.svg'}
+                    img={user.avatar || '/placeholder.svg'}
                     rounded
                     size='sm'
                     className='mr-3 border border-gray-200'
@@ -245,24 +256,22 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
                     </div>
                   </div>
                   <div className='flex space-x-2'>
-                    {currentUserId !== user._id && (
-                      <Button
-                        color='light'
-                        size='xs'
-                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                          e.stopPropagation()
-                          handleCreateConversation(user._id)
-                        }}
-                        disabled={isCreatingConversation}
-                      >
-                        <HiMail className='h-3 w-3 mr-1' />
-                        Message
-                      </Button>
-                    )}
                     <Button
                       color='light'
                       size='xs'
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleCreateConversation(user._id)
+                      }}
+                      disabled={isCreatingConversation}
+                    >
+                      <HiMail className='h-3 w-3 mr-1' />
+                      Message
+                    </Button>
+                    <Button
+                      color='light'
+                      size='xs'
+                      onClick={(e) => {
                         e.stopPropagation()
                         handleViewProfile(user._id)
                       }}
@@ -292,6 +301,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
             </div>
           )}
         </div>
+
+        <Tooltip content='Call'>
+          <Button color='gray' pill size='sm'>
+            <HiPhone className='h-4 w-4' />
+          </Button>
+        </Tooltip>
+
+        <Tooltip content='Video Call'>
+          <Button color='gray' pill size='sm'>
+            <HiVideoCamera className='h-4 w-4' />
+          </Button>
+        </Tooltip>
+
         <Tooltip content='View Members'>
           <Button color='gray' pill size='sm' onClick={handleViewMembers}>
             <HiUsers className='h-4 w-4' />
@@ -316,6 +338,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
             </Button>
           </Tooltip>
         )}
+
+        <Tooltip content='Info'>
+          <Button color='gray' pill size='sm'>
+            <HiInformationCircle className='h-4 w-4' />
+          </Button>
+        </Tooltip>
       </div>
 
       {channel && (

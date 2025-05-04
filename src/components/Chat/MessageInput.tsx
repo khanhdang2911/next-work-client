@@ -19,6 +19,8 @@ interface MessageInputProps {
   onCancelEdit?: () => void
   onMessageSent?: () => void
   conversationId?: string
+  channelName?: string
+  directMessageName?: string
 }
 
 const MessageInput: React.FC<MessageInputProps> = ({
@@ -28,7 +30,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   initialContent = '',
   onCancelEdit,
   onMessageSent,
-  conversationId
+  conversationId,
+  channelName,
+  directMessageName
 }) => {
   const [message, setMessage] = useState(initialContent)
   const [showEmojiPicker, setShowEmojiPicker] = useState(false)
@@ -38,8 +42,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   const emojiButtonRef = useRef<HTMLButtonElement>(null)
-  // const [currentChannel, setCurrentChannel] = useState<any>(null)
-  // const [currentDirectMessage, setCurrentDirectMessage] = useState<any>(null)
 
   useEffect(() => {
     if (isEditing && textareaRef.current) {
@@ -66,7 +68,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [])
 
-  // Fetch current channel or DM details for placeholder text
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
@@ -167,6 +168,15 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }
 
+  const getPlaceholderText = () => {
+    if (channelName) {
+      return `Message #${channelName}`
+    } else if (directMessageName) {
+      return `Message ${directMessageName}`
+    }
+    return 'Type a message...'
+  }
+
   return (
     <form onSubmit={handleSubmit} className='border-t p-3 relative'>
       <div className='flex items-center space-x-2 mb-2'>
@@ -216,8 +226,8 @@ const MessageInput: React.FC<MessageInputProps> = ({
         <textarea
           ref={textareaRef}
           className='flex-1 border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none'
-          placeholder={'Type a message...'}
-          rows={2}
+          placeholder={getPlaceholderText()}
+          rows={1}
           value={message}
           onChange={(e) => setMessage(e.target.value)}
           onKeyDown={handleKeyDown}

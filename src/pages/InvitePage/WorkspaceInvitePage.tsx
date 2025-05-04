@@ -236,7 +236,7 @@ const WorkspaceInvitePage: React.FC = () => {
                       htmlFor={`channel-${channel._id}`}
                       className='ml-2 text-sm font-medium text-gray-900 cursor-pointer'
                     >
-                      {channel.isPrivate ? '🔒 ' : '# '}
+                      #
                       {channel.name}
                       {channel.description && <span className='text-gray-500 text-xs ml-2'>{channel.description}</span>}
                     </label>

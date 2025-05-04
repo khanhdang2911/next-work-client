@@ -137,6 +137,11 @@ const inviteUserToChannel = async (workspaceId: string, channelId: string, email
   return response.data
 }
 
+export const reactToMessage = async (messageId: string, emoji: string) => {
+  const response = await axios.put(`/messages/${messageId}/react`, { emoji })
+  return response.data
+}
+
 export {
   register,
   login,

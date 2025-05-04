@@ -1,19 +1,18 @@
 import type React from 'react'
 
 import { useState } from 'react'
-import { Button, Label, Modal, TextInput, Checkbox } from 'flowbite-react'
+import { Button, Label, Modal, TextInput } from 'flowbite-react'
 import { HiHashtag } from 'react-icons/hi'
 
 interface CreateChannelModalProps {
   isOpen: boolean
   onClose: () => void
-  onCreateChannel: (name: string, description: string, isPrivate: boolean) => void
+  onCreateChannel: (name: string, description: string) => void
 }
 
 const CreateChannelModal: React.FC<CreateChannelModalProps> = ({ isOpen, onClose, onCreateChannel }) => {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
-  const [isPrivate, setIsPrivate] = useState(false)
   const [error, setError] = useState('')
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -31,12 +30,11 @@ const CreateChannelModal: React.FC<CreateChannelModalProps> = ({ isOpen, onClose
       return
     }
 
-    onCreateChannel(name, description, isPrivate)
+    onCreateChannel(name, description)
 
     // Reset form
     setName('')
     setDescription('')
-    setIsPrivate(false)
     setError('')
     onClose()
   }
@@ -67,14 +65,7 @@ const CreateChannelModal: React.FC<CreateChannelModalProps> = ({ isOpen, onClose
               placeholder='This channel is for team-wide communication'
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-
-          <div className='flex items-center'>
-            <Checkbox id='private-channel' checked={isPrivate} onChange={() => setIsPrivate(!isPrivate)} />
-            <Label htmlFor='private-channel' className='ml-2'>
-              Make private
-            </Label>
+          />
           </div>
 
           <div className='flex justify-end space-x-2'>

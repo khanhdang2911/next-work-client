@@ -90,31 +90,34 @@ export const useSocket = () => {
 
   // Helper function to enrich message with user data
   const enrichMessageWithUserData = async (message: IMessage): Promise<IMessage> => {
-    if (typeof message.senderId === 'string') {
+    // Create a copy of the message to avoid mutating the original
+    const enrichedMessage = { ...message }
+
+    // Only enrich if senderId is a string (not already an object)
+    if (typeof enrichedMessage.senderId === 'string') {
       try {
-        const response = await getUserById(message.senderId)
+        const response = await getUserById(enrichedMessage.senderId)
         if (response.status === 'success') {
-          return {
-            ...message,
-            senderId: {
-              _id: message.senderId,
-              name: response.data.name,
-              avatar: response.data.avatar || ''
-            } as ISender
-          }
+          enrichedMessage.senderId = {
+            _id: enrichedMessage.senderId,
+            name: response.data.name,
+            avatar: response.data.avatar || ''
+          } as ISender
         }
       } catch (error) {
         console.error('Error fetching user data:', error)
       }
     }
-    return message
+
+    return enrichedMessage
   }
 
   // Setup message listeners
   const setupChatListeners = (
     onReceiveMessage: (message: IMessage) => void,
     onEditMessage: (message: IMessage) => void,
-    onDeleteMessage: (message: IMessage) => void
+    onDeleteMessage: (message: IMessage) => void,
+    onReactMessage: (message: IMessage) => void
   ) => {
     if (!isConnected) return undefined
 
@@ -134,7 +137,13 @@ export const useSocket = () => {
       onDeleteMessage(enrichedMessage)
     }
 
-    return setupMessageListeners(handleReceiveMessage, handleEditMessage, handleDeleteMessage)
+    // Add reaction handler with proper enrichment
+    const handleReactMessage = async (message: IMessage) => {
+      const enrichedMessage = await enrichMessageWithUserData(message)
+      onReactMessage(enrichedMessage)
+    }
+
+    return setupMessageListeners(handleReceiveMessage, handleEditMessage, handleDeleteMessage, handleReactMessage)
   }
 
   return {

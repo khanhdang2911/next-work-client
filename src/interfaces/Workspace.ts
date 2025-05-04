@@ -12,7 +12,6 @@ export interface IChannel {
   name: string
   workspaceId: string
   description?: string
-  isPrivate: boolean
   createdAt: string
   updatedAt: string
   unreadCount?: number

@@ -89,6 +89,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       setShowEmojiPicker(!showEmojiPicker)
     }
 
+    // Update the handleEmojiSelect function to call onReact directly
     const handleEmojiSelect = (emojiData: EmojiClickData) => {
       onReact(message._id, emojiData.emoji)
       setShowEmojiPicker(false)
@@ -232,10 +233,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
           {message.attachments && message.attachments.length > 0 && (
             <div className='mt-2'>
               {message.attachments.map((attachment) => (
-                <div key={attachment.url} className='mt-2'>
+                <div key={attachment.id} className='mt-2'>
                   {isImageFile(attachment.type) ? (
                     // Display images directly
-                    <div key={`image-${attachment.name}`} className='mt-2'>
+                    <div key={`image-${attachment.id}`} className='mt-2'>
                       <img
                         src={attachment.url || '/placeholder.svg'}
                         alt={attachment.name}
@@ -249,7 +250,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
                   ) : (
                     // Display other files as downloadable items
                     <div
-                      key={`file-${attachment.url}`}
+                      key={`file-${attachment.id}`}
                       className='border border-gray-200 rounded-md p-3 bg-gray-50 inline-block'
                     >
                       <div className='flex items-center'>
@@ -281,16 +282,38 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
 
           {message.reactions && message.reactions.length > 0 && (
             <div className='mt-2 flex flex-wrap gap-2'>
-              {message.reactions.map((reaction) => (
-                <button
-                  key={reaction.id}
-                  className='inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 hover:bg-gray-200'
-                  onClick={() => onReact(message._id, reaction.emoji)}
-                >
-                  <span className='mr-1'>{reaction.emoji}</span>
-                  <span>{reaction.count}</span>
-                </button>
-              ))}
+              {message.reactions.map((reaction) => {
+                // Check if current user has reacted with this emoji
+                const currentUserId = auth?.user?._id
+                const userHasReacted = reaction.users.includes(currentUserId)
+
+                // Create a tooltip title that shows who reacted
+                let tooltipTitle = ''
+                if (reaction.users.length > 0) {
+                  if (userHasReacted) {
+                    tooltipTitle = 'You'
+                    if (reaction.users.length > 1) {
+                      tooltipTitle += ` and ${reaction.users.length - 1} other${reaction.users.length > 2 ? 's' : ''}`
+                    }
+                  } else {
+                    tooltipTitle = `${reaction.users.length} user${reaction.users.length > 1 ? 's' : ''}`
+                  }
+                }
+
+                return (
+                  <button
+                    key={reaction.id}
+                    className={`inline-flex items-center px-2 py-1 rounded-full text-xs ${
+                      userHasReacted ? 'bg-blue-100 hover:bg-blue-200' : 'bg-gray-100 hover:bg-gray-200'
+                    } transition-all duration-200`}
+                    onClick={() => onReact(message._id, reaction.emoji)}
+                    title={tooltipTitle}
+                  >
+                    <span className='mr-1'>{reaction.emoji}</span>
+                    <span>{reaction.count}</span>
+                  </button>
+                )
+              })}
             </div>
           )}
         </div>
