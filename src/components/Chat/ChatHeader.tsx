@@ -259,7 +259,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
                     <Button
                       color='light'
                       size='xs'
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation()
                         handleCreateConversation(user._id)
                       }}
@@ -271,7 +271,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
                     <Button
                       color='light'
                       size='xs'
-                      onClick={(e) => {
+                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
                         e.stopPropagation()
                         handleViewProfile(user._id)
                       }}
