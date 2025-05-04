@@ -72,11 +72,18 @@ export const joinWorkspaceOnline = (workspaceId: string, userId: string) => {
   socket.emit('join-workspace-online', workspaceId, userId)
 }
 
+// React to a message
+export const reactMessage = (message: IMessage) => {
+  if (!socket) return
+  socket.emit('react-message', message)
+}
+
 // Setup message listeners
 export const setupMessageListeners = (
   onReceiveMessage: (message: IMessage) => void,
   onEditMessage: (message: IMessage) => void,
-  onDeleteMessage: (message: IMessage) => void
+  onDeleteMessage: (message: IMessage) => void,
+  onReactMessage: (message: IMessage) => void // Add this parameter
 ) => {
   if (!socket) return
 
@@ -84,6 +91,7 @@ export const setupMessageListeners = (
   socket.off('receive-message')
   socket.off('receive-edit-message')
   socket.off('receive-delete-message')
+  socket.off('receive-react-message') // Add this line
 
   // Add new listeners
   socket.on('receive-message', (message) => {
@@ -98,10 +106,16 @@ export const setupMessageListeners = (
     onDeleteMessage(message)
   })
 
+  // Add reaction listener
+  socket.on('receive-react-message', (message) => {
+    onReactMessage(message)
+  })
+
   return () => {
     socket?.off('receive-message')
     socket?.off('receive-edit-message')
     socket?.off('receive-delete-message')
+    socket?.off('receive-react-message') // Add this line
   }
 }
 

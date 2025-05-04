@@ -86,7 +86,7 @@ const WorkspaceSidebar: React.FC = () => {
     fetchAllDm()
   }, [workspaceId])
 
-  const handleCreateChannel = async (name: string, description: string, isPrivate: boolean) => {
+  const handleCreateChannel = async (name: string, description: string) => {
     try {
       // In a real app, you would make an API call here
       // For now, let's simulate adding a channel locally
@@ -95,7 +95,6 @@ const WorkspaceSidebar: React.FC = () => {
         name,
         workspaceId: workspaceId ?? '',
         description,
-        isPrivate,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         unreadCount: 0,

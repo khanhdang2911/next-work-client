@@ -10,7 +10,8 @@ import {
   getChannelsByWorkspaceId,
   getAllDmConversationsOfUser,
   updateMessage,
-  deleteMessage
+  deleteMessage,
+  reactToMessage
 } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import { ErrorMessage } from '../../config/constants'
@@ -18,8 +19,11 @@ import useSocket from '../../hooks/useSocket'
 import {
   sendMessage,
   editMessage as socketEditMessage,
-  deleteMessage as socketDeleteMessage
+  deleteMessage as socketDeleteMessage,
+  reactMessage as socketReactMessage
 } from '../../config/socket'
+import { useSelector } from 'react-redux'
+import { getAuthSelector } from '../../redux/selectors'
 
 const ChatArea: React.FC = () => {
   const { directMessageId, conversationId, workspaceId } = useParams<{
@@ -36,6 +40,9 @@ const ChatArea: React.FC = () => {
 
   // Socket integration
   const { isConnected, onlineUsers, setupChatListeners } = useSocket()
+
+  // Then add this inside the component, near the other state declarations
+  const auth: any = useSelector(getAuthSelector)
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
@@ -59,7 +66,7 @@ const ChatArea: React.FC = () => {
           }
         }
       } catch (error: any) {
-        console.error('Error fetching channel details:', error)
+        toast.error(error.response?.data?.message ?? ErrorMessage)
       }
     }
 
@@ -82,7 +89,7 @@ const ChatArea: React.FC = () => {
           }
         }
       } catch (error: any) {
-        console.error('Error fetching direct message details:', error)
+        toast.error(error.response?.data?.message ?? ErrorMessage)
       }
     }
 
@@ -142,6 +149,23 @@ const ChatArea: React.FC = () => {
         if (deletedMessage.conversationId === conversationId) {
           setMessages((prev) => prev.filter((msg) => msg._id !== deletedMessage._id))
         }
+      },
+      // Handle reaction to message
+      (reactedMessage) => {
+        if (reactedMessage.conversationId === conversationId) {
+          setMessages((prev) =>
+            prev.map((msg) => {
+              if (msg._id === reactedMessage._id) {
+                // Preserve the sender object structure
+                if (typeof msg.senderId !== 'string' && typeof reactedMessage.senderId === 'string') {
+                  reactedMessage.senderId = msg.senderId
+                }
+                return reactedMessage
+              }
+              return msg
+            })
+          )
+        }
       }
     )
 
@@ -149,25 +173,39 @@ const ChatArea: React.FC = () => {
   }, [isConnected, conversationId, setupChatListeners])
 
   // Handle sending a new message
-  const handleSendMessage = useCallback((messageOrContent: string | IMessage) => {
-    // If it's a string (from editing), convert to IMessage
-    if (typeof messageOrContent === 'string') {
-      // This case is for editing messages
-      return
-    }
+  const handleSendMessage = useCallback(
+    (messageOrContent: string | IMessage) => {
+      // If it's a string (from editing), convert to IMessage
+      if (typeof messageOrContent === 'string') {
+        // This case is for editing messages
+        return
+      }
 
-    // It's an IMessage object
-    const message = messageOrContent as IMessage
+      // It's an IMessage object
+      const message = messageOrContent as IMessage
 
-    // Add message to local state immediately for better UX
-    setMessages((prev) => [...prev, message])
+      // Pre-enrich the message with the current user's information to avoid "Unknown User" flash
+      const currentUser = auth.user
+      const enrichedMessage = {
+        ...message,
+        senderId: {
+          _id: currentUser._id,
+          name: currentUser.name,
+          avatar: currentUser.avatar || ''
+        }
+      }
 
-    // Send via socket
-    sendMessage(message)
+      // Add message to local state immediately for better UX
+      setMessages((prev) => [...prev, enrichedMessage])
 
-    // Scroll to bottom
-    setTimeout(scrollToBottom, 100)
-  }, [])
+      // Send via socket
+      sendMessage(message)
+
+      // Scroll to bottom
+      setTimeout(scrollToBottom, 100)
+    },
+    [auth.user]
+  )
 
   const handleAttachFile = useCallback(() => {}, [currentChannel?._id, directMessageId])
 
@@ -225,68 +263,36 @@ const ChatArea: React.FC = () => {
     [messages]
   )
 
-  const handleReactToMessage = useCallback((messageId: string, emoji: string) => {
-    setMessages((prev) =>
-      prev.map((message) => {
-        if (message._id !== messageId) return message
+  const handleReactToMessage = useCallback(
+    async (messageId: string, emoji: string) => {
+      try {
+        const messageToReact = messages.find((msg) => msg._id === messageId)
+        if (!messageToReact) return
 
-        const existingReaction = message.reactions?.find((r) => r.emoji === emoji)
+        // Call the API to react to the message
+        const res = await reactToMessage(messageId, emoji)
 
-        if (existingReaction) {
-          // Toggle user's reaction
-          const userHasReacted = existingReaction.users.includes('user1')
+        if (res.status === 'success') {
+          // Get the updated message with new reaction data
+          const updatedMessage = res.data
 
-          if (userHasReacted) {
-            // Remove user's reaction
-            const updatedUsers = existingReaction.users.filter((id) => id !== 'user1')
-
-            if (updatedUsers.length === 0) {
-              // Remove the reaction entirely if no users left
-              return {
-                ...message,
-                reactions: message.reactions?.filter((r) => r.emoji !== emoji)
-              }
-            }
-
-            return {
-              ...message,
-              reactions: message.reactions?.map((r) =>
-                r.emoji === emoji ? { ...r, users: updatedUsers, count: r.count - 1 } : r
-              )
-            }
-          } else {
-            // Add user's reaction
-            return {
-              ...message,
-              reactions: message.reactions?.map((r) =>
-                r.emoji === emoji
-                  ? {
-                      ...r,
-                      users: [...r.users, 'user1'],
-                      count: r.count + 1
-                    }
-                  : r
-              )
-            }
-          }
-        } else {
-          // Create new reaction
-          const newReaction = {
-            id: `reaction${Date.now()}`,
-            emoji,
-            count: 1,
-            users: ['user1'],
-            messageId
+          // Preserve the sender object structure if it exists
+          if (typeof messageToReact.senderId !== 'string' && typeof updatedMessage.senderId === 'string') {
+            updatedMessage.senderId = messageToReact.senderId
           }
 
-          return {
-            ...message,
-            reactions: [...(message.reactions || []), newReaction]
-          }
+          // Update in local state
+          setMessages((prev) => prev.map((message) => (message._id === messageId ? updatedMessage : message)))
+
+          // Send via socket
+          socketReactMessage(updatedMessage)
         }
-      })
-    )
-  }, [])
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    },
+    [messages]
+  )
 
   if (isLoading) {
     return (
@@ -359,6 +365,8 @@ const ChatArea: React.FC = () => {
           onAttachFile={handleAttachFile}
           onMessageSent={() => fetchMessages(false)}
           conversationId={conversationId}
+          channelName={currentChannel?.name}
+          directMessageName={currentDirectMessage?.name}
         />
       )}
     </div>
