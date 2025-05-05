@@ -30,9 +30,6 @@ const ChannelItem: React.FC<ChannelItemProps> = React.memo(({ channel }) => {
     >
       <HiHashtag className='mr-2 h-4 w-4' />
       <span className='text-sm'>{channel.name}</span>
-      {channel.unreadCount ? (
-        <span className='ml-auto bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5'>{channel.unreadCount}</span>
-      ) : null}
     </div>
   )
 })

@@ -98,6 +98,14 @@ const getChannelMembers = async (channelId: string) => {
   return response.data
 }
 
+const createChannel = async (workspaceId: string, channelName: string, channelDescription: string) => {
+  const response = await axios.post(`/channels/${workspaceId}`, {
+    name: channelName,
+    description: channelDescription
+  })
+
+  return response.data
+}
 const createMessage = async (conversationId: string, content: string, files?: File[]) => {
   const formData = new FormData()
   formData.append('conversationId', conversationId)
@@ -162,5 +170,6 @@ export {
   inviteUserToChannel,
   updateMessage,
   deleteMessage,
-  deleteMemberChannel
+  deleteMemberChannel,
+  createChannel
 }

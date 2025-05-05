@@ -14,7 +14,6 @@ export interface IChannel {
   description?: string
   createdAt: string
   updatedAt: string
-  unreadCount?: number
   conversationId: string
 }
 

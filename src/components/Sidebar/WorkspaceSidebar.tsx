@@ -6,7 +6,7 @@ import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd } from 'react-icons/hi
 import ChannelItem from './ChannelItem'
 import DirectMessageItem from './DirectMessageItem'
 import CreateChannelModal from './CreateChannelModal'
-import { getChannelsByWorkspaceId, getAllDmConversationsOfUser, getAllWorkspaces } from '../../api/auth.api'
+import { getChannelsByWorkspaceId, getAllDmConversationsOfUser, getAllWorkspaces, createChannel } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import type { IChannel, IDirectMessage, IWorkspace } from '../../interfaces/Workspace'
 import { ErrorMessage } from '../../config/constants'
@@ -69,7 +69,7 @@ const WorkspaceSidebar: React.FC = () => {
     }
 
     fetchChannels()
-  }, [workspaceId])
+  }, [workspaceId, channels.length])
 
   useEffect(() => {
     const fetchAllDm = async () => {
@@ -88,25 +88,25 @@ const WorkspaceSidebar: React.FC = () => {
 
   const handleCreateChannel = async (name: string, description: string) => {
     try {
-      // In a real app, you would make an API call here
-      // For now, let's simulate adding a channel locally
-      const newChannel: IChannel = {
-        _id: `channel${Date.now()}`,
-        name,
-        workspaceId: workspaceId ?? '',
-        description,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        unreadCount: 0,
-        conversationId: `conv${Date.now()}`
+      if (!workspaceId) return
+      const res = await createChannel(workspaceId, name, description)
+      if (res.status === 'success') {
+        const newChannel: IChannel = {
+          _id: res.data._id,
+          name,
+          workspaceId: workspaceId,
+          description,
+          createdAt: res.data.createdAt,
+          updatedAt: res.data.updatedAt,
+          conversationId: res.data.conversationId || ''
+        }
+        // Add to local state
+        setChannels((prev) => [...prev, newChannel])
+        toast.success('Channel created successfully!')
+        setIsCreateChannelModalOpen(false)
       }
-
-      // Add to local state
-      setChannels((prev) => [...prev, newChannel])
-      toast.success('Channel created successfully!')
-      setIsCreateChannelModalOpen(false)
     } catch (error: any) {
-      toast.error(error.response?.data?.message ?? 'Failed to create channel')
+      toast.error(error.response?.data?.message ?? ErrorMessage)
     }
   }
 
