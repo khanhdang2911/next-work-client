@@ -9,6 +9,11 @@ import Login from '../pages/Login/Login'
 import VerifyPage from '../pages/VerifyPage/VerifyPage'
 import WorkspaceInvitePage from '../pages/InvitePage/WorkspaceInvitePage'
 import AcceptInvitationPage from '../pages/InvitePage/AcceptInvitationPage'
+import AdminDashboardPage from "../pages/AdminPages/AdminDashboardPage"
+import WorkspaceManagementPage from "../pages/AdminPages/SystemAdmin/WorkspaceManagementPage"
+import UserManagementPage from "../pages/AdminPages/SystemAdmin/UserManagementPage"
+import ChannelManagementPage from "../pages/AdminPages/WorkspaceAdmin/ChannelManagementPage"
+import WorkspaceUserManagementPage from "../pages/AdminPages/WorkspaceAdmin/WorkspaceUserManagementPage"
 
 interface IRoute {
   path: string
@@ -89,6 +94,31 @@ const privateRoutes: IRoute[] = [
     path: routes.members,
     component: MembersPage,
     layout: null
+  },
+  {
+    path: routes.admin,
+    component: AdminDashboardPage,
+    layout: null,
+  },
+  {
+    path: routes.adminWorkspaces,
+    component: WorkspaceManagementPage,
+    layout: null,
+  },
+  {
+    path: routes.adminUsers,
+    component: UserManagementPage,
+    layout: null,
+  },
+  {
+    path: routes.adminWorkspaceChannels,
+    component: ChannelManagementPage,
+    layout: null,
+  },
+  {
+    path: routes.adminWorkspaceUsers,
+    component: WorkspaceUserManagementPage,
+    layout: null,
   }
 ]
 

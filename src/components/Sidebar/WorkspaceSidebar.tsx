@@ -122,6 +122,27 @@ const WorkspaceSidebar: React.FC = () => {
           <span className='ml-auto text-gray-400 text-xs'>Y</span>
         </h1>
         {isAdmin && (
+          <div className="flex space-x-2 mt-2">
+            <Button
+              color="light"
+              size="xs"
+              className="w-1/2"
+              onClick={() => navigate(`/admin/workspace/${workspaceId}/channels`)}
+            >
+              Channels
+            </Button>
+            <Button
+              color="light"
+              size="xs"
+              className="w-1/2"
+              onClick={() => navigate(`/admin/workspace/${workspaceId}/users`)}
+            >
+              Users
+            </Button>
+          </div>
+        )}
+        
+        {isAdmin && (
           <div className='mt-2'>
             <Button color='blue' size='xs' className='w-full' onClick={handleInviteUsers}>
               <HiUserAdd className='mr-1 h-3 w-3' />

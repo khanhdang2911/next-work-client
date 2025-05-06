@@ -13,6 +13,11 @@ const routes = {
   workspaceInvite: '/workspace/:workspaceId/workspace-invite',
   acceptInvitation: '/workspace/:workspaceId/accept-invitation/:token',
   members: '/workspace/:workspaceId/members',
+  admin: '/admin',
+  adminWorkspaces: '/admin/workspaces',
+  adminUsers: '/admin/users',
+  adminWorkspaceChannels: '/admin/workspace/:workspaceId/channels',
+  adminWorkspaceUsers: '/admin/workspace/:workspaceId/users',
   notFound: '*'
 }
 
