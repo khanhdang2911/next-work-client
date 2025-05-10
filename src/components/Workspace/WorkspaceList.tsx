@@ -4,7 +4,7 @@ import { Button } from 'flowbite-react'
 import { HiPlus } from 'react-icons/hi'
 import type { IWorkspace } from '../../interfaces/Workspace'
 import { useState, useEffect } from 'react'
-import { getAllWorkspaces } from '../../api/auth.api'
+import { createWorkspaces, getAllWorkspaces } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import CreateWorkspaceModal from './CreateWorkspaceModal'
 import { ErrorMessage } from '../../config/constants'
@@ -36,8 +36,23 @@ const WorkspaceList: React.FC<WorkspaceListProps> = ({ activeWorkspaceId }) => {
     fetchWorkspaces()
   }, [])
 
-  const handleCreateWorkspace = async () => {//Bo sung sau
-    // Implementation remains the same
+  const handleCreateWorkspace = async (name: string, description: string) => {
+    const newWorkspace = {
+      name,
+      description
+    }
+    try {
+      const res = await createWorkspaces(newWorkspace)
+
+      if (res.status === 'success') {
+        const workspace_new: IWorkspace = res.data
+        setWorkspaces((prev) => [...prev, workspace_new])
+        setIsCreateModalOpen(false)
+        toast.success(res.message)
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || ErrorMessage)
+    }
   }
 
   return (

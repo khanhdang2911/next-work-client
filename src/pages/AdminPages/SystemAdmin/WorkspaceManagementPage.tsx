@@ -1,219 +1,183 @@
 import type React from "react"
-import { useState } from "react"
-import { Button, Card, Table, Badge, Modal, TextInput, Textarea, Spinner } from "flowbite-react"
-import { HiPlus, HiPencil, HiTrash, HiOfficeBuilding, HiSearch, HiArrowLeft } from "react-icons/hi"
-import { Link } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Button, Card, Table, Badge, TextInput, Pagination } from "flowbite-react"
+import { HiPlus, HiTrash, HiOfficeBuilding, HiSearch, HiArrowLeft } from "react-icons/hi"
+import { Link, useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog"
+import { ErrorMessage } from "../../../config/constants"
+import LoadingOverlay from "../../../components/LoadingPage/Loading"
+import { getAllWorkspacesAdmin, deleteWorkspaceAdmin, searchWorkspaces } from "../../../api/admin.api"
+import type { IWorkspaceAdmin } from "../../../interfaces/Workspace"
+import CreateWorkspaceModal from "../../../components/Workspace/CreateWorkspaceModal"
+import { createWorkspaces } from "../../../api/auth.api"
+import useDebounce from "../../../hooks/useDebounce"
 
-// Mock data for workspaces
-const MOCK_WORKSPACES = [
-  {
-    _id: "ws1",
-    name: "Marketing Team",
-    description: "Workspace for the marketing department",
-    memberCount: 15,
-    channelCount: 8,
-    createdAt: "2023-01-15T10:30:00Z",
-    status: "active",
-    admin: {
-      _id: "u1",
-      name: "John Doe",
-      email: "john@example.com",
-    },
-  },
-  {
-    _id: "ws2",
-    name: "Engineering",
-    description: "Software development team workspace",
-    memberCount: 32,
-    channelCount: 12,
-    createdAt: "2023-02-20T14:45:00Z",
-    status: "active",
-    admin: {
-      _id: "u2",
-      name: "Jane Smith",
-      email: "jane@example.com",
-    },
-  },
-  {
-    _id: "ws3",
-    name: "Sales Department",
-    description: "Sales team collaboration",
-    memberCount: 18,
-    channelCount: 5,
-    createdAt: "2023-03-10T09:15:00Z",
-    status: "active",
-    admin: {
-      _id: "u3",
-      name: "Robert Johnson",
-      email: "robert@example.com",
-    },
-  },
-  {
-    _id: "ws4",
-    name: "HR Department",
-    description: "Human resources workspace",
-    memberCount: 8,
-    channelCount: 4,
-    createdAt: "2023-04-05T11:20:00Z",
-    status: "inactive",
-    admin: {
-      _id: "u4",
-      name: "Sarah Williams",
-      email: "sarah@example.com",
-    },
-  },
-  {
-    _id: "ws5",
-    name: "Executive Team",
-    description: "Management and executive discussions",
-    memberCount: 6,
-    channelCount: 3,
-    createdAt: "2023-05-12T16:30:00Z",
-    status: "active",
-    admin: {
-      _id: "u5",
-      name: "Michael Brown",
-      email: "michael@example.com",
-    },
-  },
-]
-
-// Add this to the component props
 interface WorkspaceManagementPageProps {
   isEmbedded?: boolean
 }
 
-// Update the component definition
 const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmbedded = false }) => {
-  const [workspaces, setWorkspaces] = useState(MOCK_WORKSPACES)
-  const [isLoading, setIsLoading] = useState(false)
+  const [workspaces, setWorkspaces] = useState<IWorkspaceAdmin[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showCreateModal, setShowCreateModal] = useState(false)
-  const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [currentWorkspace, setCurrentWorkspace] = useState<any>(null)
-  const [formData, setFormData] = useState({
-    name: "",
-    description: "",
-  })
+  const [currentWorkspace, setCurrentWorkspace] = useState<IWorkspaceAdmin | null>(null)
+  const [isSearching, setIsSearching] = useState(false)
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
-  // Filter workspaces based on search term
-  const filteredWorkspaces = workspaces.filter(
-    (workspace) =>
-      workspace.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workspace.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      workspace.admin.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [limit] = useState(5)
 
-  // Handle form input changes
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({ ...prev, [name]: value }))
+  const navigate = useNavigate()
+
+  // Fetch workspaces from API
+  useEffect(() => {
+    fetchWorkspaces()
+  }, [currentPage])
+
+  const fetchWorkspaces = async () => {
+    setIsLoading(true)
+    try {
+      const response = await getAllWorkspacesAdmin(currentPage, limit)
+      if (response.status === "success") {
+        setWorkspaces(response.data.workspaces)
+        setCurrentPage(response.data.currentPage)
+        setTotalPages(response.data.totalPages)
+      } else {
+        toast.error("Failed to fetch workspaces")
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const { statusCode, message } = error.response.data
+        toast.error(message || ErrorMessage)
+        if (statusCode === 403) {
+          navigate("/forbidden")
+        }
+      }
+    }
   }
 
-  // Open edit modal with workspace data
-  const handleEditClick = (workspace: any) => {
-    setCurrentWorkspace(workspace)
-    setFormData({
-      name: workspace.name,
-      description: workspace.description,
-    })
-    setShowEditModal(true)
-  }
-
-  // Open delete confirmation modal
-  const handleDeleteClick = (workspace: any) => {
+  const handleDeleteClick = (workspace: IWorkspaceAdmin) => {
     setCurrentWorkspace(workspace)
     setShowDeleteModal(true)
   }
 
-  // Create new workspace
-  const handleCreateWorkspace = () => {
-    setIsLoading(true)
+  const handleCreateClick = () => {
+    setIsLoading(false)
+    setShowCreateModal(true)
+  }
 
-    // Simulate API call
-    setTimeout(() => {
-      const newWorkspace = {
-        _id: `ws${workspaces.length + 1}`,
-        name: formData.name,
-        description: formData.description,
-        memberCount: 1,
-        channelCount: 1,
-        createdAt: new Date().toISOString(),
-        status: "active",
-        admin: {
-          _id: "current-user",
-          name: "Current User",
-          email: "current@example.com",
-        },
+  const handleCreateWorkspace = async (name: string, description: string) => {
+    const newWorkspace = {
+      name,
+      description,
+    }
+    try {
+      const res = await createWorkspaces(newWorkspace)
+      if (res.status === "success") {
+        fetchWorkspaces()
+        toast.success(res.message)
       }
-
-      setWorkspaces([...workspaces, newWorkspace])
-      setShowCreateModal(false)
-      setFormData({ name: "", description: "" })
-      setIsLoading(false)
-      toast.success("Workspace created successfully")
-    }, 1000)
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || ErrorMessage)
+    }
   }
 
-  // Update existing workspace
-  const handleUpdateWorkspace = () => {
-    setIsLoading(true)
+  const handleDeleteWorkspace = async () => {
+    if (!currentWorkspace) return
 
-    // Simulate API call
+    setIsLoading(true)
+    try {
+      const res = await deleteWorkspaceAdmin(currentWorkspace._id)
+      if (res.status === "success") {
+        const updatedWorkspaces = workspaces.filter((workspace) => workspace._id !== currentWorkspace._id)
+        setWorkspaces(updatedWorkspaces)
+        setShowDeleteModal(false)
+        setCurrentWorkspace(null)
+        setIsLoading(false)
+        toast.success(res.message)
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const { statusCode, message } = error.response.data
+        toast.error(message || ErrorMessage)
+        if (statusCode === 403) {
+          navigate("/forbidden")
+        }
+      }
+    }
+  }
+
+  const handleToggleStatus = async (workspace: IWorkspaceAdmin) => {
+    // fake api call
     setTimeout(() => {
-      const updatedWorkspaces = workspaces.map((workspace) =>
-        workspace._id === currentWorkspace._id
-          ? { ...workspace, name: formData.name, description: formData.description }
-          : workspace,
-      )
+      const updatedWorkspaces = workspaces.map((w) => (w._id === workspace._id ? { ...w, isLocked: !w.isLocked } : w))
 
       setWorkspaces(updatedWorkspaces)
-      setShowEditModal(false)
-      setCurrentWorkspace(null)
-      setFormData({ name: "", description: "" })
-      setIsLoading(false)
-      toast.success("Workspace updated successfully")
-    }, 1000)
+      toast.success(`Workspace ${workspace.isLocked ? "unlocked" : "locked"} successfully`)
+    }, 500)
   }
 
-  // Delete workspace
-  const handleDeleteWorkspace = () => {
-    setIsLoading(true)
-
-    // Simulate API call
-    setTimeout(() => {
-      const updatedWorkspaces = workspaces.filter((workspace) => workspace._id !== currentWorkspace._id)
-
-      setWorkspaces(updatedWorkspaces)
-      setShowDeleteModal(false)
-      setCurrentWorkspace(null)
-      setIsLoading(false)
-      toast.success("Workspace deleted successfully")
-    }, 1000)
+  // Handle page change
+  const onPageChange = (page: number) => {
+    setCurrentPage(page)
   }
 
-  // Toggle workspace status (active/inactive)
-  const handleToggleStatus = (workspaceId: string) => {
-    const updatedWorkspaces = workspaces.map((workspace) =>
-      workspace._id === workspaceId
-        ? { ...workspace, status: workspace.status === "active" ? "inactive" : "active" }
-        : workspace,
-    )
-
-    setWorkspaces(updatedWorkspaces)
-    toast.success("Workspace status updated")
-  }
-
-  // Format date for display
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     })
+  }
+
+  // useEffect for search
+  useEffect(() => {
+    if (!debouncedSearchTerm) {
+      if (searchTerm === "") { // gọi lại get all khi search trở về rỗng
+        fetchWorkspaces()
+      }
+      return
+    }
+
+    const fetchSearchResults = async () => {
+      setIsSearching(true)
+      try {
+        const response = await searchWorkspaces(debouncedSearchTerm, currentPage, limit)
+        if (response.status === "success") {
+          setWorkspaces(response.data.workspaces)
+          setCurrentPage(response.data.currentPage)
+          setTotalPages(response.data.totalPages)
+        }
+      } catch (error: any) {
+        if (error.response) {
+          const { statusCode, message } = error.response.data
+          toast.error(message || ErrorMessage)
+          if (statusCode === 403) {
+            navigate("/forbidden")
+          }
+        }
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    fetchSearchResults()
+  }, [debouncedSearchTerm, currentPage, limit])
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    }
+  }
+
+  if (isLoading && workspaces.length === 0) {
+    return <LoadingOverlay isLoading={true} />
   }
 
   return (
@@ -230,7 +194,7 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
           )}
           <h1 className="text-2xl font-bold">Workspace Management</h1>
         </div>
-        <Button color="blue" onClick={() => setShowCreateModal(true)}>
+        <Button color="blue" onClick={handleCreateClick}>
           <HiPlus className="mr-2 h-4 w-4" />
           Create Workspace
         </Button>
@@ -247,7 +211,7 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
               type="search"
               placeholder="Search workspaces..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-10"
             />
           </div>
@@ -266,146 +230,70 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
               <Table.HeadCell>Actions</Table.HeadCell>
             </Table.Head>
             <Table.Body className="divide-y">
-              {filteredWorkspaces.map((workspace) => (
-                <Table.Row key={workspace._id} className="bg-white">
-                  <Table.Cell className="font-medium text-gray-900">
-                    <div className="flex items-center">
-                      <HiOfficeBuilding className="mr-2 h-5 w-5 text-blue-600" />
-                      {workspace.name}
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell className="max-w-xs truncate">{workspace.description}</Table.Cell>
-                  <Table.Cell>{workspace.admin.name}</Table.Cell>
-                  <Table.Cell>{workspace.memberCount}</Table.Cell>
-                  <Table.Cell>{workspace.channelCount}</Table.Cell>
-                  <Table.Cell>{formatDate(workspace.createdAt)}</Table.Cell>
-                  <Table.Cell>
-                    <Badge
-                      color={workspace.status === "active" ? "success" : "gray"}
-                      onClick={() => handleToggleStatus(workspace._id)}
-                      className="cursor-pointer"
-                    >
-                      {workspace.status === "active" ? "Active" : "Inactive"}
-                    </Badge>
-                  </Table.Cell>
-                  <Table.Cell>
-                    <div className="flex space-x-2">
-                      <Button color="light" size="xs" onClick={() => handleEditClick(workspace)}>
-                        <HiPencil className="h-4 w-4" />
-                      </Button>
-                      <Button color="failure" size="xs" onClick={() => handleDeleteClick(workspace)}>
-                        <HiTrash className="h-4 w-4" />
-                      </Button>
+              {isSearching ? (
+                <Table.Row>
+                  <Table.Cell colSpan={8} className="text-center py-4">
+                    <div className="flex justify-center">
+                      <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
                     </div>
                   </Table.Cell>
                 </Table.Row>
-              ))}
+              ) : workspaces.length > 0 ? (
+                workspaces.map((workspace) => (
+                  <Table.Row key={workspace._id} className="bg-white">
+                    <Table.Cell className="font-medium text-gray-900">
+                      <div className="flex items-center">
+                        <HiOfficeBuilding className="mr-2 h-5 w-5 text-blue-600" />
+                        {workspace.name}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell className="max-w-xs truncate">{workspace.description}</Table.Cell>
+                    <Table.Cell>{workspace.admin.name}</Table.Cell>
+                    <Table.Cell>{workspace.numberOfMembers}</Table.Cell>
+                    <Table.Cell>{workspace.numberOfChannels}</Table.Cell>
+                    <Table.Cell>{formatDate(workspace.createdAt)}</Table.Cell>
+                    <Table.Cell>
+                      <Badge
+                        color={workspace.isLocked ? "gray" : "success"}
+                        onClick={() => handleToggleStatus(workspace)}
+                        className="cursor-pointer"
+                      >
+                        {workspace.isLocked ? "Locked" : "Active"}
+                      </Badge>
+                    </Table.Cell>
+                    <Table.Cell>
+                      <div className="flex space-x-2">
+                        <Button color="failure" size="xs" onClick={() => handleDeleteClick(workspace)}>
+                          <HiTrash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                ))
+              ) : (
+                <Table.Row>
+                  <Table.Cell colSpan={8} className="text-center py-4">
+                    {searchTerm ? "No workspaces found matching your search" : "No workspaces found"}
+                  </Table.Cell>
+                </Table.Row>
+              )}
             </Table.Body>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-4">
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} showIcons />
+          </div>
+        )}
       </Card>
 
-      {/* Create Workspace Modal */}
-      <Modal show={showCreateModal} onClose={() => setShowCreateModal(false)}>
-        <Modal.Header>Create New Workspace</Modal.Header>
-        <Modal.Body>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900">
-                Workspace Name
-              </label>
-              <TextInput
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter workspace name"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-900">
-                Description
-              </label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Enter workspace description"
-                rows={3}
-              />
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button color="blue" onClick={handleCreateWorkspace} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Spinner size="sm" className="mr-2" />
-                Creating...
-              </>
-            ) : (
-              "Create Workspace"
-            )}
-          </Button>
-          <Button color="gray" onClick={() => setShowCreateModal(false)}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <CreateWorkspaceModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateWorkspace={handleCreateWorkspace}
+      />
 
-      {/* Edit Workspace Modal */}
-      <Modal show={showEditModal} onClose={() => setShowEditModal(false)}>
-        <Modal.Header>Edit Workspace</Modal.Header>
-        <Modal.Body>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="edit-name" className="block mb-2 text-sm font-medium text-gray-900">
-                Workspace Name
-              </label>
-              <TextInput
-                id="edit-name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="Enter workspace name"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="edit-description" className="block mb-2 text-sm font-medium text-gray-900">
-                Description
-              </label>
-              <Textarea
-                id="edit-description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="Enter workspace description"
-                rows={3}
-              />
-            </div>
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button color="blue" onClick={handleUpdateWorkspace} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Spinner size="sm" className="mr-2" />
-                Updating...
-              </>
-            ) : (
-              "Update Workspace"
-            )}
-          </Button>
-          <Button color="gray" onClick={() => setShowEditModal(false)}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal>
-
-      {/* Delete Confirmation Dialog */}
       <ConfirmDialog
         show={showDeleteModal}
         title="Delete Workspace"

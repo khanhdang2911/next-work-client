@@ -1,6 +1,6 @@
 import type React from "react"
 import { Link } from "react-router-dom"
-import { HiOfficeBuilding, HiUserGroup, HiCog, HiChartBar, HiHome } from "react-icons/hi"
+import { HiOfficeBuilding, HiUserGroup, HiChartBar, HiHome } from "react-icons/hi"
 
 interface AdminSidebarProps {
   isSystemAdmin?: boolean
@@ -28,7 +28,7 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
   return (
     <div className="w-64 bg-gray-800 h-screen flex flex-col">
       <div className="p-4 border-b border-gray-700">
-        <h1 className="text-white font-bold text-lg">{isSystemAdmin ? "System Admin" : "Workspace Admin"}</h1>
+        <h1 className="text-white font-bold text-lg">{isSystemAdmin && "System Admin"}</h1>
       </div>
 
       <div className="flex-1 overflow-y-auto py-4">
@@ -74,33 +74,6 @@ const AdminSidebar: React.FC<AdminSidebarProps> = ({
                 >
                   <HiUserGroup className="w-5 h-5 mr-3" />
                   <span>Users</span>
-                </button>
-              </li>
-            </>
-          )}
-
-          {!isSystemAdmin && (
-            <>
-              <li>
-                <button
-                  onClick={() => handleNavigation("channels")}
-                  className={`flex items-center p-2 rounded-lg w-full text-left ${
-                    isActive("channels") ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
-                  }`}
-                >
-                  <HiCog className="w-5 h-5 mr-3" />
-                  <span>Channel Management</span>
-                </button>
-              </li>
-              <li>
-                <button
-                  onClick={() => handleNavigation("workspaceUsers")}
-                  className={`flex items-center p-2 rounded-lg w-full text-left ${
-                    isActive("workspaceUsers") ? "bg-blue-600 text-white" : "text-gray-300 hover:bg-gray-700"
-                  }`}
-                >
-                  <HiUserGroup className="w-5 h-5 mr-3" />
-                  <span>User Management</span>
                 </button>
               </li>
             </>

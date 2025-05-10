@@ -14,6 +14,7 @@ import WorkspaceManagementPage from "../pages/AdminPages/SystemAdmin/WorkspaceMa
 import UserManagementPage from "../pages/AdminPages/SystemAdmin/UserManagementPage"
 import ChannelManagementPage from "../pages/AdminPages/WorkspaceAdmin/ChannelManagementPage"
 import WorkspaceUserManagementPage from "../pages/AdminPages/WorkspaceAdmin/WorkspaceUserManagementPage"
+import ForbiddenPage from '../pages/ForbiddenPage/ForbiddenPage'
 
 interface IRoute {
   path: string
@@ -118,6 +119,11 @@ const privateRoutes: IRoute[] = [
   {
     path: routes.adminWorkspaceUsers,
     component: WorkspaceUserManagementPage,
+    layout: null,
+  },
+  {
+    path: routes.forbidden,
+    component: ForbiddenPage,
     layout: null,
   }
 ]
