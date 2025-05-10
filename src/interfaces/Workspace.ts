@@ -66,3 +66,27 @@ export interface IMessageCreateResponse {
   message: string
   data: IMessage
 }
+
+// Admin interfaces
+export interface IWorkspaceAdmin {
+  _id: string
+  name: string
+  description: string
+  admin: {
+    _id: string
+    name: string
+    email: string
+  }
+  createdAt: string
+  updatedAt: string
+  numberOfChannels: number
+  numberOfMembers: number
+  isLocked?: boolean
+}
+
+export interface WorkspaceAdminApiResponse {
+  status: string
+  data: IWorkspaceAdmin[]
+  currentPage: number
+  totalPages: number
+}

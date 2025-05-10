@@ -48,7 +48,7 @@ const WorkspacesPage: React.FC = () => {
         const workspace_new: IWorkspace = res.data
         setWorkspaces((prev) => [...prev, workspace_new])
         setIsCreateModalOpen(false)
-        toast.success('Create workspace succeeded')
+        toast.success(res.message)
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || ErrorMessage)

@@ -18,6 +18,7 @@ const routes = {
   adminUsers: '/admin/users',
   adminWorkspaceChannels: '/admin/workspace/:workspaceId/channels',
   adminWorkspaceUsers: '/admin/workspace/:workspaceId/users',
+  forbidden: '/forbidden',
   notFound: '*'
 }
 
