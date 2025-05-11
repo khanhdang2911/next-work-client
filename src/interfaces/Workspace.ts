@@ -90,3 +90,48 @@ export interface WorkspaceAdminApiResponse {
   currentPage: number
   totalPages: number
 }
+
+// Workspace Admin interfaces
+export interface IChannelAdmin {
+  _id: string
+  name: string
+  description: string
+  isActive: boolean
+  workspaceId: string
+  admin: {
+    _id: string
+    name: string
+    email: string
+  }
+  createdAt: string
+  updatedAt: string
+  members: number
+}
+
+export interface ChannelAdminApiResponse {
+  status: string
+  data: {
+    channels: IChannelAdmin[]
+    currentPage: number
+    totalPages: number
+  }
+}
+
+// Workspace User interfaces
+export interface IWorkspaceUser {
+  _id: string
+  name: string
+  email: string
+  avatar?: string
+  joinedAt: string
+  isWorkspaceAdmin: boolean
+}
+
+export interface WorkspaceUserApiResponse {
+  status: string
+  data: {
+    users: IWorkspaceUser[]
+    currentPage: number
+    totalPages: number
+  }
+}

@@ -1,74 +1,21 @@
 import type React from "react"
-import { useState } from "react"
-import { Button, Card, Table, Modal, TextInput, Textarea, Spinner } from "flowbite-react"
-import { HiPlus, HiPencil, HiTrash, HiHashtag, HiSearch, HiArrowLeft, HiLockClosed } from "react-icons/hi"
-import { Link, useParams } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Button, Card, Table, Modal, TextInput, Textarea, Spinner, Pagination } from "flowbite-react"
+import { HiPlus, HiPencil, HiTrash, HiHashtag, HiSearch, HiArrowLeft} from "react-icons/hi"
+import { Link, useParams, useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog"
-
-// Mock data for channels
-const MOCK_CHANNELS = [
-  {
-    _id: "ch1",
-    name: "general",
-    description: "General discussions for everyone",
-    memberCount: 32,
-    createdAt: "2023-01-15T10:30:00Z",
-    isPrivate: false,
-    createdBy: {
-      _id: "u1",
-      name: "John Doe",
-    },
-  },
-  {
-    _id: "ch2",
-    name: "announcements",
-    description: "Important announcements from the team",
-    memberCount: 32,
-    createdAt: "2023-01-16T14:45:00Z",
-    isPrivate: false,
-    createdBy: {
-      _id: "u1",
-      name: "John Doe",
-    },
-  },
-  {
-    _id: "ch3",
-    name: "project-alpha",
-    description: "Discussions about Project Alpha",
-    memberCount: 12,
-    createdAt: "2023-02-10T09:15:00Z",
-    isPrivate: true,
-    createdBy: {
-      _id: "u2",
-      name: "Jane Smith",
-    },
-  },
-  {
-    _id: "ch4",
-    name: "random",
-    description: "Random discussions and off-topic chat",
-    memberCount: 28,
-    createdAt: "2023-02-12T11:20:00Z",
-    isPrivate: false,
-    createdBy: {
-      _id: "u3",
-      name: "Robert Johnson",
-    },
-  },
-  {
-    _id: "ch5",
-    name: "design-team",
-    description: "Design team discussions and resources",
-    memberCount: 8,
-    createdAt: "2023-03-05T16:30:00Z",
-    isPrivate: true,
-    createdBy: {
-      _id: "u4",
-      name: "Sarah Williams",
-    },
-  },
-]
+import { ErrorMessage } from "../../../config/constants"
+import useDebounce from "../../../hooks/useDebounce"
+import {
+  getAllChannelsAdmin,
+  searchChannelsAdmin,
+  updateChannelAdmin,
+  deleteChannelAdmin
+} from "../../../api/workspace.admin.api"
+import type { IChannelAdmin } from "../../../interfaces/Workspace"
+import CreateChannelModal from "../../../components/Sidebar/CreateChannelModal"
+import { createChannel } from "../../../api/auth.api"
 
 interface ChannelManagementPageProps {
   isEmbedded?: boolean
@@ -80,91 +27,173 @@ const ChannelManagementPage: React.FC<ChannelManagementPageProps> = ({
   workspaceId: propWorkspaceId,
 }) => {
   const params = useParams<{ workspaceId: string }>()
-  const effectiveWorkspaceId = propWorkspaceId || params.workspaceId
-  const [channels, setChannels] = useState(MOCK_CHANNELS)
-  const [isLoading, setIsLoading] = useState(false)
+  const effectiveWorkspaceId = propWorkspaceId || params.workspaceId || ""
+  const navigate = useNavigate()
+
+  const [channels, setChannels] = useState<IChannelAdmin[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [currentChannel, setCurrentChannel] = useState<any>(null)
+  const [currentChannel, setCurrentChannel] = useState<IChannelAdmin | null>(null)
+  const [hasChanges, setHasChanges] = useState(false)
   const [formData, setFormData] = useState({
     name: "",
     description: "",
-    isPrivate: false,
   })
+  const [isSearching, setIsSearching] = useState(false)
+  const debouncedSearchTerm = useDebounce(searchTerm, 500)
 
-  // Filter channels based on search term
-  const filteredChannels = channels.filter(
-    (channel) =>
-      channel.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      channel.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      channel.createdBy.name.toLowerCase().includes(searchTerm.toLowerCase()),
-  )
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [limit] = useState(5)
+
+  // Fetch channels from API
+  useEffect(() => {
+    fetchChannels()
+  }, [currentPage, effectiveWorkspaceId])
+
+  const fetchChannels = async () => {
+    if (!effectiveWorkspaceId) return
+
+    setIsLoading(true)
+    try {
+      const response = await getAllChannelsAdmin(effectiveWorkspaceId, currentPage, limit)
+      if (response.status === "success") {
+        setChannels(response.data.channels)
+        setCurrentPage(response.data.currentPage)
+        setTotalPages(response.data.totalPages)
+      } 
+    } catch (error: any) {
+      if (error.response) {
+        const { statusCode, message } = error.response.data
+        toast.error(message || ErrorMessage)
+        if (statusCode === 403) {
+          navigate("/forbidden")
+        }
+      } else {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  // Handle search with debounce
+  useEffect(() => {
+    if (!debouncedSearchTerm) {
+      if (searchTerm === "") {
+        fetchChannels()
+      }
+      return
+    }
+
+    const fetchSearchResults = async () => {
+      if (!effectiveWorkspaceId) return
+
+      setIsSearching(true)
+      try {
+        const response = await searchChannelsAdmin(effectiveWorkspaceId, debouncedSearchTerm, currentPage, limit)
+        if (response.status === "success") {
+          setChannels(response.data.channels)
+          setCurrentPage(response.data.currentPage)
+          setTotalPages(response.data.totalPages)
+        }
+      } catch (error: any) {
+        if (error.response) {
+          const { statusCode, message } = error.response.data
+          toast.error(message || ErrorMessage)
+          if (statusCode === 403) {
+            navigate("/forbidden")
+          }
+        } else {
+          toast.error(error.response?.data?.message || ErrorMessage)
+        }
+      } finally {
+        setIsSearching(false)
+      }
+    }
+
+    fetchSearchResults()
+  }, [debouncedSearchTerm, currentPage, limit, effectiveWorkspaceId])
 
   // Handle form input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement
+    const { name, value } = e.target as HTMLInputElement
     setFormData((prev) => ({
       ...prev,
-      [name]: type === "checkbox" ? checked : value,
+      [name]: value,
     }))
+
+    if (currentChannel) {
+      const hasChangesName = name === "name" && value !== currentChannel.name
+      const hasChangesDescription = name === "description" && value !== currentChannel.description
+
+      setHasChanges(hasChangesName || hasChangesDescription)
+    }
   }
 
   // Open edit modal with channel data
-  const handleEditClick = (channel: any) => {
+  const handleEditClick = (channel: IChannelAdmin) => {
     setCurrentChannel(channel)
     setFormData({
       name: channel.name,
-      description: channel.description,
-      isPrivate: channel.isPrivate,
+      description: channel.description || "",
     })
     setShowEditModal(true)
+    setHasChanges(false)
   }
 
   // Open delete confirmation modal
-  const handleDeleteClick = (channel: any) => {
+  const handleDeleteClick = (channel: IChannelAdmin) => {
     setCurrentChannel(channel)
     setShowDeleteModal(true)
   }
 
   // Create new channel
-  const handleCreateChannel = () => {
+  const handleCreateChannel = async (name: string, description: string) => {
+    if (!effectiveWorkspaceId) return
+
     setIsLoading(true)
 
     // Validate channel name (lowercase, no spaces, etc.)
     const channelNameRegex = /^[a-z0-9_-]+$/
-    if (!channelNameRegex.test(formData.name)) {
+    console.log("Input:",name); 
+    if (!channelNameRegex.test(name)) {
       toast.error("Channel name can only contain lowercase letters, numbers, hyphens, and underscores")
       setIsLoading(false)
       return
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      const newChannel = {
-        _id: `ch${channels.length + 1}`,
-        name: formData.name,
-        description: formData.description,
-        memberCount: 1,
-        createdAt: new Date().toISOString(),
-        isPrivate: formData.isPrivate,
-        createdBy: {
-          _id: "current-user",
-          name: "Current User",
-        },
+    try {
+      // const response = await createChannelAdmin(effectiveWorkspaceId, formData)
+      const response = await createChannel(effectiveWorkspaceId, name, description)
+      if (response.status === "success") {
+        toast.success(response.message)
+        fetchChannels()
+        setShowCreateModal(false)
       }
-
-      setChannels([...channels, newChannel])
-      setShowCreateModal(false)
-      setFormData({ name: "", description: "", isPrivate: false })
+    } catch (error: any) {
+      if (error.response) {
+        const { statusCode, message } = error.response.data
+        toast.error(message || ErrorMessage)
+        if (statusCode === 403) {
+          navigate("/forbidden")
+        }
+      } else {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    } finally {
       setIsLoading(false)
-      toast.success("Channel created successfully")
-    }, 1000)
+    }
   }
 
   // Update existing channel
-  const handleUpdateChannel = () => {
+  const handleUpdateChannel = async () => {
+    if (!currentChannel) return
+
     setIsLoading(true)
 
     // Validate channel name (lowercase, no spaces, etc.)
@@ -175,42 +204,86 @@ const ChannelManagementPage: React.FC<ChannelManagementPageProps> = ({
       return
     }
 
-    // Simulate API call
-    setTimeout(() => {
-      const updatedChannels = channels.map((channel) =>
-        channel._id === currentChannel._id
-          ? {
-              ...channel,
-              name: formData.name,
-              description: formData.description,
-              isPrivate: formData.isPrivate,
-            }
-          : channel,
-      )
+    try {
+      const response = await updateChannelAdmin(effectiveWorkspaceId, currentChannel._id, {
+        name: formData.name,
+        description: formData.description,
+      })
 
-      setChannels(updatedChannels)
-      setShowEditModal(false)
-      setCurrentChannel(null)
-      setFormData({ name: "", description: "", isPrivate: false })
+      if (response.status === "success") {
+        const updatedChannels = channels.map((channel) =>
+          channel._id === currentChannel._id
+            ? {
+                ...channel,
+                name: formData.name,
+                description: formData.description,
+              }
+            : channel,
+        )
+
+        setChannels(updatedChannels)
+        setShowEditModal(false)
+        setCurrentChannel(null)
+        setFormData({ name: "", description: ""})
+        toast.success(response.message)
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const { statusCode, message } = error.response.data
+        toast.error(message || ErrorMessage)
+        if (statusCode === 403) {
+          navigate("/forbidden")
+        }
+      } else {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    } finally {
       setIsLoading(false)
-      toast.success("Channel updated successfully")
-    }, 1000)
+    }
   }
 
   // Delete channel
-  const handleDeleteChannel = () => {
+  const handleDeleteChannel = async () => {
+    if (!currentChannel) return
+
     setIsLoading(true)
 
-    // Simulate API call
-    setTimeout(() => {
-      const updatedChannels = channels.filter((channel) => channel._id !== currentChannel._id)
+    try {
+      const response = await deleteChannelAdmin(effectiveWorkspaceId, currentChannel._id)
 
-      setChannels(updatedChannels)
-      setShowDeleteModal(false)
-      setCurrentChannel(null)
+      if (response.status === "success") {
+        const updatedChannels = channels.filter((channel) => channel._id !== currentChannel._id)
+        setChannels(updatedChannels)
+        setShowDeleteModal(false)
+        setCurrentChannel(null)
+        toast.success(response.message)
+      }
+    } catch (error: any) {
+      if (error.response) {
+        const { statusCode, message } = error.response.data
+        toast.error(message || ErrorMessage)
+        if (statusCode === 403) {
+          navigate("/forbidden")
+        }
+      } else {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    } finally {
       setIsLoading(false)
-      toast.success("Channel deleted successfully")
-    }, 1000)
+    }
+  }
+
+  // Handle search input change
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchTerm(e.target.value)
+    if (currentPage !== 1) {
+      setCurrentPage(1)
+    }
+  }
+
+  // Handle page change
+  const onPageChange = (page: number) => {
+    setCurrentPage(page)
   }
 
   // Format date for display
@@ -253,7 +326,7 @@ const ChannelManagementPage: React.FC<ChannelManagementPageProps> = ({
               type="search"
               placeholder="Search channels..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearchChange}
               className="pl-10"
             />
           </div>
@@ -270,108 +343,70 @@ const ChannelManagementPage: React.FC<ChannelManagementPageProps> = ({
               <Table.HeadCell>Actions</Table.HeadCell>
             </Table.Head>
             <Table.Body className="divide-y">
-              {filteredChannels.map((channel) => (
-                <Table.Row key={channel._id} className="bg-white">
-                  <Table.Cell className="font-medium text-gray-900">
-                    <div className="flex items-center">
-                      <HiHashtag className="mr-2 h-5 w-5 text-gray-600" />
-                      {channel.name}
-                    </div>
-                  </Table.Cell>
-                  <Table.Cell className="max-w-xs truncate">{channel.description}</Table.Cell>
-                  <Table.Cell>{channel.createdBy.name}</Table.Cell>
-                  <Table.Cell>{channel.memberCount}</Table.Cell>
-                  <Table.Cell>{formatDate(channel.createdAt)}</Table.Cell>
-                  <Table.Cell>
-                    <div className="flex space-x-2">
-                      <Button color="light" size="xs" onClick={() => handleEditClick(channel)}>
-                        <HiPencil className="h-4 w-4" />
-                      </Button>
-                      <Button color="failure" size="xs" onClick={() => handleDeleteClick(channel)}>
-                        <HiTrash className="h-4 w-4" />
-                      </Button>
+              {isSearching ? (
+                <Table.Row>
+                  <Table.Cell colSpan={6} className="text-center py-4">
+                    <div className="flex justify-center">
+                      <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
                     </div>
                   </Table.Cell>
                 </Table.Row>
-              ))}
+              ) : isLoading && channels.length === 0 ? (
+                <Table.Row>
+                  <Table.Cell colSpan={6} className="text-center py-4">
+                    <div className="flex justify-center">
+                      <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
+                    </div>
+                  </Table.Cell>
+                </Table.Row>
+              ) : channels.length > 0 ? (
+                channels.map((channel) => (
+                  <Table.Row key={channel._id} className="bg-white">
+                    <Table.Cell className="font-medium text-gray-900">
+                      <div className="flex items-center">
+                        <HiHashtag className="mr-2 h-5 w-5 text-gray-600" />
+                        {channel.name}
+                      </div>
+                    </Table.Cell>
+                    <Table.Cell className="max-w-xs truncate">{channel.description}</Table.Cell>
+                    <Table.Cell>{channel.admin.name}</Table.Cell>
+                    <Table.Cell>{channel.members}</Table.Cell>
+                    <Table.Cell>{formatDate(channel.createdAt)}</Table.Cell>
+                    <Table.Cell>
+                      <div className="flex space-x-2">
+                        <Button color="light" size="xs" onClick={() => handleEditClick(channel)}>
+                          <HiPencil className="h-4 w-4" />
+                        </Button>
+                        <Button color="failure" size="xs" onClick={() => handleDeleteClick(channel)}>
+                          <HiTrash className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </Table.Cell>
+                  </Table.Row>
+                ))
+              ) : (
+                <Table.Row>
+                  <Table.Cell colSpan={6} className="text-center py-4">
+                    {searchTerm ? "No channels found matching your search" : "No channels found"}
+                  </Table.Cell>
+                </Table.Row>
+              )}
             </Table.Body>
           </Table>
         </div>
+
+        {totalPages > 1 && (
+          <div className="flex justify-center mt-4">
+            <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} showIcons />
+          </div>
+        )}
       </Card>
 
-      {/* Create Channel Modal */}
-      <Modal show={showCreateModal} onClose={() => setShowCreateModal(false)}>
-        <Modal.Header>Create New Channel</Modal.Header>
-        <Modal.Body>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900">
-                Channel Name
-              </label>
-              <TextInput
-                id="name"
-                name="name"
-                value={formData.name}
-                onChange={handleInputChange}
-                placeholder="e.g. project-updates"
-                required
-                helperText="Lowercase letters, numbers, hyphens and underscores only"
-              />
-            </div>
-            <div>
-              <label htmlFor="description" className="block mb-2 text-sm font-medium text-gray-900">
-                Description (Optional)
-              </label>
-              <Textarea
-                id="description"
-                name="description"
-                value={formData.description}
-                onChange={handleInputChange}
-                placeholder="What's this channel about?"
-                rows={3}
-              />
-            </div>
-            <div className="flex items-center">
-              <input
-                id="isPrivate"
-                name="isPrivate"
-                type="checkbox"
-                checked={formData.isPrivate}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="isPrivate" className="ml-2 text-sm font-medium text-gray-900">
-                Make channel private
-              </label>
-            </div>
-            {formData.isPrivate && (
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <div className="flex">
-                  <HiLockClosed className="h-5 w-5 text-gray-600 mr-2 flex-shrink-0" />
-                  <p className="text-sm text-gray-600">
-                    Private channels are only visible to invited members. This cannot be changed later.
-                  </p>
-                </div>
-              </div>
-            )}
-          </div>
-        </Modal.Body>
-        <Modal.Footer>
-          <Button color="blue" onClick={handleCreateChannel} disabled={isLoading}>
-            {isLoading ? (
-              <>
-                <Spinner size="sm" className="mr-2" />
-                Creating...
-              </>
-            ) : (
-              "Create Channel"
-            )}
-          </Button>
-          <Button color="gray" onClick={() => setShowCreateModal(false)}>
-            Cancel
-          </Button>
-        </Modal.Footer>
-      </Modal>
+      <CreateChannelModal
+        isOpen={showCreateModal}
+        onClose={() => setShowCreateModal(false)}
+        onCreateChannel={handleCreateChannel}
+      />
 
       {/* Edit Channel Modal */}
       <Modal show={showEditModal} onClose={() => setShowEditModal(false)}>
@@ -405,34 +440,10 @@ const ChannelManagementPage: React.FC<ChannelManagementPageProps> = ({
                 rows={3}
               />
             </div>
-            <div className="flex items-center">
-              <input
-                id="edit-isPrivate"
-                name="isPrivate"
-                type="checkbox"
-                checked={formData.isPrivate}
-                onChange={handleInputChange}
-                className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500"
-                disabled={currentChannel?.isPrivate !== formData.isPrivate}
-              />
-              <label htmlFor="edit-isPrivate" className="ml-2 text-sm font-medium text-gray-900">
-                Make channel private
-              </label>
-            </div>
-            {currentChannel?.isPrivate && (
-              <div className="p-3 bg-gray-100 rounded-lg">
-                <div className="flex">
-                  <HiLockClosed className="h-5 w-5 text-gray-600 mr-2 flex-shrink-0" />
-                  <p className="text-sm text-gray-600">
-                    The privacy setting of a channel cannot be changed after creation.
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
         </Modal.Body>
         <Modal.Footer>
-          <Button color="blue" onClick={handleUpdateChannel} disabled={isLoading}>
+          <Button color="blue" onClick={handleUpdateChannel} disabled={isLoading || !hasChanges}>
             {isLoading ? (
               <>
                 <Spinner size="sm" className="mr-2" />
