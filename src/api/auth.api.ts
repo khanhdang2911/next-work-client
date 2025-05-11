@@ -150,6 +150,18 @@ export const reactToMessage = async (messageId: string, emoji: string) => {
   return response.data
 }
 
+// Function to leave a channel
+export const leaveChannel = async (channelId: string) => {
+  const response = await axios.delete(`/channels/leave/${channelId}`)
+  return response.data
+}
+
+// Function to leave a workspace
+export const leaveWorkspace = async (workspaceId: string) => {
+  const response = await axios.delete(`/workspaces/leave/${workspaceId}`)
+  return response.data
+}
+
 export {
   register,
   login,

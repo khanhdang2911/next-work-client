@@ -224,7 +224,8 @@ const ChatArea: React.FC = () => {
           const updatedMessage = {
             ...messageToUpdate,
             content,
-            updatedAt: res.updatedAt || new Date().toISOString()
+            updatedAt: res.updatedAt ?? new Date().toISOString(),
+            isEdited: true // Make sure we set isEdited to true
           }
 
           // Update in local state
@@ -311,14 +312,14 @@ const ChatArea: React.FC = () => {
 
       <div className='flex-1 overflow-y-auto'>
         <div className='py-4'>
-        {currentChannel?.description && (
-          <div className='px-4 pb-4'>
-            <div className='bg-gray-100 dark:bg-gray-700 p-3 rounded-lg'>
-              <h3 className='font-semibold text-gray-800 dark:text-gray-200 mb-1'>Channel Description</h3>
-              <p className='text-gray-600 dark:text-gray-300'>{currentChannel.description}</p>
+          {currentChannel?.description && (
+            <div className='px-4 pb-4'>
+              <div className='bg-gray-100 dark:bg-gray-700 p-3 rounded-lg'>
+                <h3 className='font-semibold text-gray-800 dark:text-gray-200 mb-1'>Channel Description</h3>
+                <p className='text-gray-600 dark:text-gray-300'>{currentChannel.description}</p>
+              </div>
             </div>
-          </div>
-        )}
+          )}
           {messages.length > 0 ? (
             messages.map((message) => {
               if (editingMessageId === message._id) {

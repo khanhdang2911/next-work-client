@@ -133,26 +133,21 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
 
     setIsCreatingConversation(true)
     try {
+      // Create a conversation or get existing one
       const response = await createDirectConversation(workspaceId, [currentUserId, userId])
 
-      // Navigate to the new conversation
-      const conversationId = response.data._id
+      // Extract the conversationId - handles both cases:
+      // 1. New conversation: response.data._id
+      // 2. Existing conversation: response.data.conversationId
+      const conversationId = response.data.conversationId || response.data._id
+
+      // Navigate to the conversation
       navigate(`/workspace/${workspaceId}/dm/${conversationId}`)
       setSearchQuery('')
       setShowSearchResults(false)
     } catch (error: any) {
       console.error('Error creating conversation:', error)
-
-      // If the error is because the conversation already exists, try to extract the conversation ID
-      if (error.response?.data?.data?.conversationId) {
-        const existingConversationId = error.response.data.data.conversationId
-        navigate(`/workspace/${workspaceId}/dm/${existingConversationId}`)
-        setSearchQuery('')
-        setShowSearchResults(false)
-      } else {
-        // Only show toast for unexpected errors
-        toast.error(error.response?.data?.message || ErrorMessage)
-      }
+      toast.error(error.response?.data?.message || ErrorMessage)
     } finally {
       setIsCreatingConversation(false)
     }
@@ -176,19 +171,15 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
   return (
     <div className='border-b p-3 flex items-center'>
       <div className='flex-1'>
-      {channel && (
-        <div className='flex flex-col'>
-          <div className='flex items-center'>
-            <HiHashtag className='mr-2 h-4 w-4' />
-            <h2 className='font-semibold'>{channel.name}</h2>
+        {channel && (
+          <div className='flex flex-col'>
+            <div className='flex items-center'>
+              <HiHashtag className='mr-2 h-4 w-4' />
+              <h2 className='font-semibold'>{channel.name}</h2>
+            </div>
+            {channel.description && <span className='mt-1 text-gray-500 text-sm pl-6'>{channel.description}</span>}
           </div>
-          {channel.description && (
-            <span className='mt-1 text-gray-500 text-sm pl-6'>
-              {channel.description}
-            </span>
-          )}
-        </div>
-      )}
+        )}
 
         {directMessage && (
           <div className='flex items-center'>
@@ -262,18 +253,21 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
                     </div>
                   </div>
                   <div className='flex space-x-2'>
-                    <Button
-                      color='light'
-                      size='xs'
-                      onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
-                        e.stopPropagation()
-                        handleCreateConversation(user._id)
-                      }}
-                      disabled={isCreatingConversation}
-                    >
-                      <HiMail className='h-3 w-3 mr-1' />
-                      Message
-                    </Button>
+                    {/* Only show Message button if it's not the current user */}
+                    {user._id !== currentUserId && (
+                      <Button
+                        color='light'
+                        size='xs'
+                        onClick={(e: React.MouseEvent<HTMLButtonElement>) => {
+                          e.stopPropagation()
+                          handleCreateConversation(user._id)
+                        }}
+                        disabled={isCreatingConversation}
+                      >
+                        <HiMail className='h-3 w-3 mr-1' />
+                        Message
+                      </Button>
+                    )}
                     <Button
                       color='light'
                       size='xs'

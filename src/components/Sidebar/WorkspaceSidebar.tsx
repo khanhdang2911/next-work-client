@@ -2,16 +2,24 @@ import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Button } from 'flowbite-react'
-import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd } from 'react-icons/hi'
+import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd, HiShieldCheck, HiLogout } from 'react-icons/hi'
 import ChannelItem from './ChannelItem'
 import DirectMessageItem from './DirectMessageItem'
 import CreateChannelModal from './CreateChannelModal'
-import { getChannelsByWorkspaceId, getAllDmConversationsOfUser, getAllWorkspaces, createChannel } from '../../api/auth.api'
+import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import {
+  getChannelsByWorkspaceId,
+  getAllDmConversationsOfUser,
+  getAllWorkspaces,
+  createChannel,
+  leaveWorkspace
+} from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import type { IChannel, IDirectMessage, IWorkspace } from '../../interfaces/Workspace'
 import { ErrorMessage } from '../../config/constants'
 import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
+import useAuth from '../../hooks/useAuth'
 
 const WorkspaceSidebar: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -23,10 +31,13 @@ const WorkspaceSidebar: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [workspace, setWorkspace] = useState<IWorkspace | null>(null)
   const [isAdmin, setIsAdmin] = useState(false)
+  const [showLeaveWorkspaceConfirm, setShowLeaveWorkspaceConfirm] = useState(false)
+  const [isLeavingWorkspace, setIsLeavingWorkspace] = useState(false)
   const createChannelBtnRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
   const auth: any = useSelector(getAuthSelector)
   const currentUserId = auth.user?._id
+  const { canAccessWorkspaceAdmin } = useAuth()
 
   // Fetch workspace details to get the name and check if user is admin
   useEffect(() => {
@@ -51,25 +62,25 @@ const WorkspaceSidebar: React.FC = () => {
     fetchWorkspaceDetails()
   }, [workspaceId, currentUserId])
 
-  useEffect(() => {
-    const fetchChannels = async () => {
-      if (!workspaceId) return
+  const fetchChannels = async () => {
+    if (!workspaceId) return
 
-      setIsLoading(true)
-      try {
-        const res = await getChannelsByWorkspaceId(workspaceId)
-        if (res.status === 'success') {
-          setChannels(res.data)
-        }
-      } catch (error: any) {
-        toast.error(error.response?.data?.message ?? ErrorMessage)
-      } finally {
-        setIsLoading(false)
+    setIsLoading(true)
+    try {
+      const res = await getChannelsByWorkspaceId(workspaceId)
+      if (res.status === 'success') {
+        setChannels(res.data)
       }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message ?? ErrorMessage)
+    } finally {
+      setIsLoading(false)
     }
+  }
 
+  useEffect(() => {
     fetchChannels()
-  }, [workspaceId, channels.length])
+  }, [workspaceId])
 
   useEffect(() => {
     const fetchAllDm = async () => {
@@ -114,6 +125,28 @@ const WorkspaceSidebar: React.FC = () => {
     navigate(`/workspace/${workspaceId}/workspace-invite`)
   }
 
+  const handleLeaveWorkspace = async () => {
+    if (!workspaceId) return
+
+    try {
+      setIsLeavingWorkspace(true)
+      const response = await leaveWorkspace(workspaceId)
+      if (response.status === 'success') {
+        toast.success(response.message || 'Left workspace successfully')
+        // Navigate to home page after leaving workspace
+        navigate('/')
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || ErrorMessage)
+    } finally {
+      setIsLeavingWorkspace(false)
+      setShowLeaveWorkspaceConfirm(false)
+    }
+  }
+
+  // Check if user has admin access to workspace (either system admin or workspace admin)
+  const hasWorkspaceAdminAccess = canAccessWorkspaceAdmin() || isAdmin
+
   return (
     <div className='w-64 bg-gray-900 h-screen flex flex-col'>
       <div className='p-4 border-b border-gray-700'>
@@ -121,28 +154,30 @@ const WorkspaceSidebar: React.FC = () => {
           {workspace ? workspace.name : 'Loading workspace...'}
           <span className='ml-auto text-gray-400 text-xs'>Y</span>
         </h1>
-        {isAdmin && (
-          <div className="flex space-x-2 mt-2">
+        {hasWorkspaceAdminAccess && (
+          <div className='flex space-x-2 mt-2'>
             <Button
-              color="light"
-              size="xs"
-              className="w-1/2"
+              color='light'
+              size='xs'
+              className='w-1/2'
               onClick={() => navigate(`/admin/workspace/${workspaceId}/channels`)}
             >
+              <HiShieldCheck className='mr-1 h-3 w-3' />
               Channels
             </Button>
             <Button
-              color="light"
-              size="xs"
-              className="w-1/2"
+              color='light'
+              size='xs'
+              className='w-1/2'
               onClick={() => navigate(`/admin/workspace/${workspaceId}/users`)}
             >
+              <HiShieldCheck className='mr-1 h-3 w-3' />
               Users
             </Button>
           </div>
         )}
-        
-        {isAdmin && (
+
+        {hasWorkspaceAdminAccess && (
           <div className='mt-2'>
             <Button color='blue' size='xs' className='w-full' onClick={handleInviteUsers}>
               <HiUserAdd className='mr-1 h-3 w-3' />
@@ -185,7 +220,9 @@ const WorkspaceSidebar: React.FC = () => {
               {isLoading ? (
                 <div className='px-4 py-2 text-gray-400 text-sm'>Loading channels...</div>
               ) : channels.length > 0 ? (
-                channels.map((channel) => <ChannelItem key={channel._id} channel={channel} />)
+                channels.map((channel) => (
+                  <ChannelItem key={channel._id} channel={channel} onChannelLeave={fetchChannels} />
+                ))
               ) : (
                 <div className='px-4 py-2 text-gray-400 text-sm'>No channels found</div>
               )}
@@ -217,10 +254,32 @@ const WorkspaceSidebar: React.FC = () => {
         </div>
       </div>
 
+      {/* Leave Workspace Button */}
+      <div className='p-4 border-t border-gray-700'>
+        <Button
+          color='failure'
+          size='xs'
+          className='w-full'
+          onClick={() => setShowLeaveWorkspaceConfirm(true)}
+          disabled={isLeavingWorkspace}
+        >
+          <HiLogout className='mr-1 h-3 w-3' />
+          Leave Workspace
+        </Button>
+      </div>
+
       <CreateChannelModal
         isOpen={isCreateChannelModalOpen}
         onClose={() => setIsCreateChannelModalOpen(false)}
         onCreateChannel={handleCreateChannel}
+      />
+
+      <ConfirmDialog
+        show={showLeaveWorkspaceConfirm}
+        title='Leave Workspace'
+        message={`Are you sure you want to leave the "${workspace?.name}" workspace? You will need to be invited back to rejoin.`}
+        onConfirm={handleLeaveWorkspace}
+        onCancel={() => setShowLeaveWorkspaceConfirm(false)}
       />
     </div>
   )

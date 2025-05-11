@@ -74,6 +74,22 @@ instance.interceptors.response.use(
   },
   (error) => {
     // Any status codes that falls outside the range of 2xx cause this function to trigger
+    if (error.response) {
+      const { status } = error.response
+
+      // Handle 404 errors - redirect to NotFound page
+      if (status === 404) {
+        window.location.href = '/404'
+        return Promise.reject(error)
+      }
+
+      // Handle 403 errors - redirect to Forbidden page
+      if (status === 403) {
+        window.location.href = '/forbidden'
+        return Promise.reject(error)
+      }
+    }
+
     // Do something with response error
     return Promise.reject(error)
   }
@@ -96,16 +112,58 @@ refreshInstance.interceptors.request.use(
 // Add a response interceptor
 refreshInstance.interceptors.response.use(
   (response) => {
-    // Any status code that lie within the range of 2xx cause this function to trigger
-    // Do something with response data
     return response
   },
   (error) => {
-    // Any status codes that falls outside the range of 2xx cause this function to trigger
-    // Do something with response error
+    if (error.response) {
+      const { status } = error.response
+
+      if (status === 404) {
+        window.location.href = '/404'
+        return Promise.reject(error)
+      }
+
+      if (status === 403) {
+        window.location.href = '/forbidden'
+        return Promise.reject(error)
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
+normalInstance.interceptors.response.use(
+  (response) => {
+    return response
+  },
+  (error) => {
+    if (error.response) {
+      const { status } = error.response
+
+      if (status === 404) {
+        window.location.href = '/404'
+        return Promise.reject(error)
+      }
+
+      if (status === 403) {
+        window.location.href = '/forbidden'
+        return Promise.reject(error)
+      }
+    }
     return Promise.reject(error)
   }
 )
 
 export default instance
 export { refreshInstance, normalInstance }
+
+// Global axios error handler
+axios.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.response && error.response.status === 403) {
+      window.location.href = '/forbidden'
+    }
+    return Promise.reject(error)
+  }
+)

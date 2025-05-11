@@ -9,11 +9,11 @@ import Login from '../pages/Login/Login'
 import VerifyPage from '../pages/VerifyPage/VerifyPage'
 import WorkspaceInvitePage from '../pages/InvitePage/WorkspaceInvitePage'
 import AcceptInvitationPage from '../pages/InvitePage/AcceptInvitationPage'
-import AdminDashboardPage from "../pages/AdminPages/AdminDashboardPage"
-import WorkspaceManagementPage from "../pages/AdminPages/SystemAdmin/WorkspaceManagementPage"
-import UserManagementPage from "../pages/AdminPages/SystemAdmin/UserManagementPage"
-import ChannelManagementPage from "../pages/AdminPages/WorkspaceAdmin/ChannelManagementPage"
-import WorkspaceUserManagementPage from "../pages/AdminPages/WorkspaceAdmin/WorkspaceUserManagementPage"
+import AdminDashboardPage from '../pages/AdminPages/AdminDashboardPage'
+import WorkspaceManagementPage from '../pages/AdminPages/SystemAdmin/WorkspaceManagementPage'
+import UserManagementPage from '../pages/AdminPages/SystemAdmin/UserManagementPage'
+import ChannelManagementPage from '../pages/AdminPages/WorkspaceAdmin/ChannelManagementPage'
+import WorkspaceUserManagementPage from '../pages/AdminPages/WorkspaceAdmin/WorkspaceUserManagementPage'
 import ForbiddenPage from '../pages/ForbiddenPage/ForbiddenPage'
 import NotFoundPage from '../pages/NotfoundPage/NotfoundPage'
 
@@ -21,6 +21,7 @@ interface IRoute {
   path: string
   component: any
   layout: any
+  requiredRoles?: string[] // Add this property for role-based access control
 }
 
 const publicRoutes: IRoute[] = [
@@ -47,6 +48,11 @@ const publicRoutes: IRoute[] = [
   {
     path: routes.acceptInvitation,
     component: AcceptInvitationPage,
+    layout: null
+  },
+  {
+    path: routes.forbidden,
+    component: ForbiddenPage,
     layout: null
   }
 ]
@@ -97,35 +103,36 @@ const privateRoutes: IRoute[] = [
     component: MembersPage,
     layout: null
   },
+  // Admin routes with required roles
   {
     path: routes.admin,
     component: AdminDashboardPage,
     layout: null,
+    requiredRoles: ['admin']
   },
   {
     path: routes.adminWorkspaces,
     component: WorkspaceManagementPage,
     layout: null,
+    requiredRoles: ['admin']
   },
   {
     path: routes.adminUsers,
     component: UserManagementPage,
     layout: null,
+    requiredRoles: ['admin']
   },
   {
     path: routes.adminWorkspaceChannels,
     component: ChannelManagementPage,
     layout: null,
+    requiredRoles: ['workspace_admin']
   },
   {
     path: routes.adminWorkspaceUsers,
     component: WorkspaceUserManagementPage,
     layout: null,
-  },
-  {
-    path: routes.forbidden,
-    component: ForbiddenPage,
-    layout: null,
+    requiredRoles: ['workspace_admin']
   }
 ]
 
