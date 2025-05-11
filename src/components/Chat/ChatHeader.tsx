@@ -176,13 +176,19 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
   return (
     <div className='border-b p-3 flex items-center'>
       <div className='flex-1'>
-        {channel && (
+      {channel && (
+        <div className='flex flex-col'>
           <div className='flex items-center'>
             <HiHashtag className='mr-2 h-4 w-4' />
             <h2 className='font-semibold'>{channel.name}</h2>
-            {channel.description && <span className='ml-2 text-gray-500 text-sm'>{channel.description}</span>}
           </div>
-        )}
+          {channel.description && (
+            <span className='mt-1 text-gray-500 text-sm pl-6'>
+              {channel.description}
+            </span>
+          )}
+        </div>
+      )}
 
         {directMessage && (
           <div className='flex items-center'>

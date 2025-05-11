@@ -15,6 +15,7 @@ import UserManagementPage from "../pages/AdminPages/SystemAdmin/UserManagementPa
 import ChannelManagementPage from "../pages/AdminPages/WorkspaceAdmin/ChannelManagementPage"
 import WorkspaceUserManagementPage from "../pages/AdminPages/WorkspaceAdmin/WorkspaceUserManagementPage"
 import ForbiddenPage from '../pages/ForbiddenPage/ForbiddenPage'
+import NotFoundPage from '../pages/NotfoundPage/NotfoundPage'
 
 interface IRoute {
   path: string
@@ -25,7 +26,7 @@ interface IRoute {
 const publicRoutes: IRoute[] = [
   {
     path: routes.notFound,
-    component: WorkspacesPage,
+    component: NotFoundPage,
     layout: null
   },
   {

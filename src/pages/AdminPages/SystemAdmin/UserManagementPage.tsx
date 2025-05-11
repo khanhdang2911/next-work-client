@@ -117,6 +117,7 @@ const UserManagementPage: React.FC<UserManagementPageProps> = ({ isEmbedded = fa
 
   const handleEditClick = (user: any) => {
     setCurrentUser(user)
+    setIsLoading(false)
     setFormData({
       name: user.name,
       role: user.role,
