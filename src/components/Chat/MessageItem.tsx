@@ -44,9 +44,8 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       return content
     }, [message.content])
 
-    const isEdited = useMemo(() => {
-      return message.createdAt !== message.updatedAt
-    }, [message.createdAt, message.updatedAt])
+    // Use the isEdited field directly instead of comparing timestamps
+    const isEdited = message.isEdited === true
 
     // Safely determine if current user is the message sender
     const isCurrentUser = isUserObject && user._id === auth?.user?._id

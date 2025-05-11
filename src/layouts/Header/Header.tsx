@@ -1,5 +1,5 @@
 import { Button, Avatar, Dropdown } from 'flowbite-react'
-import { FaUserCircle, FaSignOutAlt } from 'react-icons/fa'
+import { FaUserCircle, FaSignOutAlt, FaShieldAlt } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
 import { useDispatch, useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
@@ -8,11 +8,15 @@ import authSlice from '../../redux/authSlice'
 import { useAuth0 } from '@auth0/auth0-react'
 import Logo from '../../assets/icons/Logo.svg'
 import { toast } from 'react-toastify'
+import useAuth from '../../hooks/useAuth'
+
 export default function Header() {
   const auth: any = useSelector(getAuthSelector)
   const { logout } = useAuth0()
   const navigate = useNavigate()
   const dispatch = useDispatch()
+  const { isAdmin } = useAuth()
+
   const handleLogout = async () => {
     try {
       //logout auth0
@@ -31,8 +35,8 @@ export default function Header() {
     <header className='bg-white shadow-sm h-[8vh] flex items-center'>
       <div className='w-full flex h-14 items-center justify-between px-4'>
         <Link className='flex items-center text-blue-500' to='/'>
-          <img src={Logo} alt='' className='h-8 w-8 mr-2' />
-          <span className='text-xl font-semibold'>CloudTalk </span>
+          <img src={Logo || '/placeholder.svg'} alt='' className='h-8 w-8 mr-2' />
+          <span className='text-xl font-semibold'>Next-work </span>
         </Link>
 
         <div className='flex items-center gap-4'>
@@ -42,7 +46,16 @@ export default function Header() {
                 <span className='block text-sm'>{auth.user.name}</span>
                 <span className='block truncate text-sm font-medium'>{auth.user.email}</span>
               </Dropdown.Header>
-              <Dropdown.Item icon={FaUserCircle}>Profile</Dropdown.Item>
+              <Dropdown.Item icon={FaUserCircle} onClick={() => navigate('/profile')}>
+                Profile
+              </Dropdown.Item>
+
+              {isAdmin() && (
+                <Dropdown.Item icon={FaShieldAlt} onClick={() => navigate('/admin')}>
+                  Admin Dashboard
+                </Dropdown.Item>
+              )}
+
               <Dropdown.Divider />
               <Dropdown.Item icon={FaSignOutAlt} onClick={handleLogout}>
                 Sign out
