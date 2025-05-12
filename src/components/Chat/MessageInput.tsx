@@ -43,15 +43,21 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [showFileUploadModal, setShowFileUploadModal] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
-  const [isBold, setIsBold] = useState(false)
-  const [isItalic, setIsItalic] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
+  // const [formattedRanges, setFormattedRanges] = useState<
+  //   {
+  //     type: "bold" | "italic"
+  //     start: number
+  //     end: number
+  //   }[]
+  // >([])
+
+  const contentEditableRef = useRef<HTMLDivElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)
   const emojiButtonRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
-    if (isEditing && textareaRef.current) {
-      textareaRef.current.focus()
+    if (isEditing && contentEditableRef.current) {
+      contentEditableRef.current.focus()
     }
   }, [isEditing])
 
@@ -74,31 +80,45 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }, [])
 
+  // Convert formatted content to markdown before sending
+  const getMarkdownContent = () => {
+    if (!contentEditableRef.current) return message
+
+    // Get the HTML content
+    const htmlContent = contentEditableRef.current.innerHTML
+
+    // Convert HTML to markdown
+    let markdownContent = htmlContent
+      .replace(/<div><br><\/div>/g, "\n")
+      .replace(/<div>(.*?)<\/div>/g, "\n$1")
+      .replace(/<br>/g, "\n")
+      .replace(/<b>(.*?)<\/b>/g, "**$1**")
+      .replace(/<strong>(.*?)<\/strong>/g, "**$1**")
+      .replace(/<i>(.*?)<\/i>/g, "*$1*")
+      .replace(/<em>(.*?)<\/em>/g, "*$1*")
+
+    // Clean up any HTML entities
+    markdownContent = markdownContent.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&amp;/g, "&")
+
+    return markdownContent.trim()
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!message.trim() && selectedFiles.length === 0) {
+    // Get the markdown content from the contentEditable div
+    const markdownContent = getMarkdownContent()
+
+    if (!markdownContent.trim() && selectedFiles.length === 0) {
       return
     }
 
-    // Process the message with formatting before sending
-    let processedMessage = message
-
-    // Apply bold formatting if active
-    if (isBold) {
-      processedMessage = `**${processedMessage}**`
-    }
-
-    // Apply italic formatting if active
-    if (isItalic) {
-      processedMessage = `*${processedMessage}*`
-    }
-
     if (isEditing) {
-      onSendMessage(processedMessage)
+      onSendMessage(markdownContent)
       setMessage("")
-      setIsBold(false)
-      setIsItalic(false)
+      if (contentEditableRef.current) {
+        contentEditableRef.current.innerHTML = ""
+      }
       return
     }
 
@@ -117,7 +137,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     setIsSending(true)
 
     try {
-      const response = await createMessage(conversationId, processedMessage, selectedFiles)
+      const response = await createMessage(conversationId, markdownContent, selectedFiles)
 
       if (response.status === "success") {
         // Pass the new message to the parent component
@@ -125,8 +145,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
 
         setMessage("")
         setSelectedFiles([])
-        setIsBold(false)
-        setIsItalic(false)
+
+        // Clear the contentEditable div
+        if (contentEditableRef.current) {
+          contentEditableRef.current.innerHTML = ""
+        }
+
         if (onMessageSent) {
           onMessageSent()
         }
@@ -145,105 +169,89 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }
 
-  // Toggle bold formatting
-  const toggleBold = () => {
-    setIsBold(!isBold)
-    if (textareaRef.current) {
-      textareaRef.current.focus()
-    }
-  }
-
-  // Toggle italic formatting
-  const toggleItalic = () => {
-    setIsItalic(!isItalic)
-    if (textareaRef.current) {
-      textareaRef.current.focus()
+  // Apply formatting to selected text
+  const applyFormatting = (formatType: "bold" | "italic") => {
+    if (document.getSelection) {
+      const selection = document.getSelection()
+      if (selection && selection.rangeCount > 0 && selection.toString().length > 0) {
+        // Check if the selection is within our contentEditable div
+        const range = selection.getRangeAt(0)
+        if (contentEditableRef.current && contentEditableRef.current.contains(range.commonAncestorContainer)) {
+          // Apply the formatting using execCommand
+          document.execCommand(formatType, false, "")
+        } else {
+          toast.info("Please select text in the message input")
+        }
+      } else {
+        toast.info("Please select text to format")
+      }
     }
   }
 
   // Handle list formatting
   const insertList = () => {
-    if (!textareaRef.current) return
+    if (!contentEditableRef.current) return
 
-    const start = textareaRef.current.selectionStart
-    const end = textareaRef.current.selectionEnd
-    const selectedText = message.substring(start, end)
-    const beforeText = message.substring(0, start)
-    const afterText = message.substring(end)
+    const selection = document.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0)
+      if (contentEditableRef.current.contains(range.commonAncestorContainer)) {
+        // Get selected text
+        const selectedText = selection.toString()
 
-    let newText
+        if (selectedText) {
+          // Convert selected text to numbered list
+          const lines = selectedText.split("\n").filter((line) => line.trim() !== "")
+          const numberedLines = lines.map((line, index) => `${index + 1}. ${line}`)
+          const formattedList = numberedLines.join("\n")
 
-    if (selectedText) {
-      // Convert selected text to numbered list
-      const lines = selectedText.split("\n")
-      const numberedLines = lines.map((line, index) => `${index + 1}. ${line}`)
-      newText = beforeText + numberedLines.join("\n") + afterText
-    } else {
-      // Start a numbered list with the current message
-      const lines = message.split("\n")
-      const numberedLines = lines.map((line, index) => `${index + 1}. ${line}`)
-      newText = numberedLines.join("\n")
-    }
-
-    setMessage(newText)
-
-    // Focus back on textarea after formatting
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus()
+          // Replace the selected content with the numbered list
+          document.execCommand("insertText", false, formattedList)
+        } else {
+          // Insert a new numbered list item
+          document.execCommand("insertText", false, "1. ")
+        }
       }
-    }, 0)
+    }
   }
 
   // Handle code block formatting
   const insertCodeBlock = () => {
-    if (!textareaRef.current) return
+    if (!contentEditableRef.current) return
 
-    const start = textareaRef.current.selectionStart
-    const end = textareaRef.current.selectionEnd
-    const selectedText = message.substring(start, end)
-    const beforeText = message.substring(0, start)
-    const afterText = message.substring(end)
+    const selection = document.getSelection()
+    if (selection && selection.rangeCount > 0) {
+      const range = selection.getRangeAt(0)
+      if (contentEditableRef.current.contains(range.commonAncestorContainer)) {
+        // Get selected text
+        const selectedText = selection.toString()
 
-    let newText
+        if (selectedText) {
+          // Wrap selected text in code block
+          const codeBlock = `\`\`\`\n${selectedText}\n\`\`\``
+          document.execCommand("insertText", false, codeBlock)
+        } else {
+          // Insert an empty code block
+          document.execCommand("insertText", false, "```\n\n```")
 
-    if (selectedText) {
-      // Wrap selected text in code block
-      newText = beforeText + "```\n" + selectedText + "\n```" + afterText
-    } else {
-      // Wrap entire message in code block
-      newText = "```\n" + message + "\n```"
-    }
-
-    setMessage(newText)
-
-    // Focus back on textarea after formatting
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus()
+          // Position cursor inside the code block
+          const selection = document.getSelection()
+          if (selection && selection.rangeCount > 0) {
+            const range = selection.getRangeAt(0)
+            range.setStart(range.startContainer, range.startOffset - 4)
+            selection.removeAllRanges()
+            selection.addRange(range)
+          }
+        }
       }
-    }, 0)
+    }
   }
 
   const handleEmojiSelect = (emojiData: EmojiClickData) => {
-    if (textareaRef.current) {
-      const start = textareaRef.current.selectionStart
-      const newText = message.slice(0, start) + emojiData.emoji + message.slice(start)
-      setMessage(newText)
-
-      // Set cursor position after the inserted emoji
-      setTimeout(() => {
-        if (textareaRef.current) {
-          textareaRef.current.focus()
-          const newPosition = start + emojiData.emoji.length
-          textareaRef.current.selectionStart = newPosition
-          textareaRef.current.selectionEnd = newPosition
-        }
-      }, 0)
-    } else {
-      setMessage(message + emojiData.emoji)
+    if (contentEditableRef.current) {
+      // Insert emoji at current cursor position
+      document.execCommand("insertText", false, emojiData.emoji)
     }
-
     setShowEmojiPicker(false)
   }
 
@@ -271,18 +279,24 @@ const MessageInput: React.FC<MessageInputProps> = ({
     return "Type a message..."
   }
 
+  const handleContentChange = () => {
+    if (contentEditableRef.current) {
+      setMessage(contentEditableRef.current.innerText)
+    }
+  }
+
   return (
     <form onSubmit={handleSubmit} className="border-t p-3 relative">
       {/* Update the formatting buttons to use the improved function */}
       <div className="flex items-center space-x-2 mb-2">
-        <Tooltip content="Bold">
-          <Button color={isBold ? "blue" : "gray"} pill size="xs" onClick={toggleBold} type="button">
+        <Tooltip content="Bold (select text first)">
+          <Button color="gray" pill size="xs" onClick={() => applyFormatting("bold")} type="button">
             <span className="font-bold">B</span>
           </Button>
         </Tooltip>
 
-        <Tooltip content="Italic">
-          <Button color={isItalic ? "blue" : "gray"} pill size="xs" onClick={toggleItalic} type="button">
+        <Tooltip content="Italic (select text first)">
+          <Button color="gray" pill size="xs" onClick={() => applyFormatting("italic")} type="button">
             <span className="italic">/</span>
           </Button>
         </Tooltip>
@@ -319,29 +333,22 @@ const MessageInput: React.FC<MessageInputProps> = ({
       )}
 
       <div className="flex items-center">
-        {/* Update the textarea to show formatting visually */}
         <div className="relative flex-1">
-          <textarea
-            ref={textareaRef}
-            className={`w-full border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none ${
-              isBold ? "font-bold" : ""
-            } ${isItalic ? "italic" : ""}`}
-            placeholder={getPlaceholderText()}
-            rows={1}
-            value={message}
-            onChange={(e) => {
-              setMessage(e.target.value)
-              // Auto-resize the textarea based on content
-              e.target.style.height = "auto"
-              e.target.style.height = Math.min(e.target.scrollHeight, 200) + "px"
-            }}
+          {/* ContentEditable div for rich text editing */}
+          <div
+            ref={contentEditableRef}
+            className="w-full min-h-[40px] max-h-[200px] border rounded-lg p-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 overflow-auto"
+            contentEditable
+            onInput={handleContentChange}
             onKeyDown={handleKeyDown}
-            disabled={isSending}
+            data-placeholder={getPlaceholderText()}
+            style={{ outline: "none" }}
+            dangerouslySetInnerHTML={{ __html: initialContent }}
           />
-          {(isBold || isItalic) && (
-            <div className="absolute top-0 right-0 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded-bl-md">
-              {isBold && isItalic ? "Bold + Italic" : isBold ? "Bold" : "Italic"}
-            </div>
+
+          {/* Placeholder text */}
+          {!message && (
+            <div className="absolute top-2 left-2 text-gray-400 pointer-events-none">{getPlaceholderText()}</div>
           )}
         </div>
 
