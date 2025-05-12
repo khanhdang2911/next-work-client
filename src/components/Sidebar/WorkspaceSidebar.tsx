@@ -1,24 +1,32 @@
-import type React from 'react'
-import { useState, useEffect, useRef } from 'react'
-import { useParams, useNavigate } from 'react-router-dom'
-import { Button } from 'flowbite-react'
-import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd, HiShieldCheck, HiLogout } from 'react-icons/hi'
-import ChannelItem from './ChannelItem'
-import DirectMessageItem from './DirectMessageItem'
-import CreateChannelModal from './CreateChannelModal'
-import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
+import type React from "react"
+import { useState, useEffect, useRef } from "react"
+import { useParams, useNavigate } from "react-router-dom"
+import { Button } from "flowbite-react"
+import {
+  HiChevronDown,
+  HiChevronRight,
+  HiPlus,
+  HiUserAdd,
+  HiShieldCheck,
+  HiLogout,
+  HiArrowLeft,
+} from "react-icons/hi"
+import ChannelItem from "./ChannelItem"
+import DirectMessageItem from "./DirectMessageItem"
+import CreateChannelModal from "./CreateChannelModal"
+import ConfirmDialog from "../ConfirmDialog/ConfirmDialog"
 import {
   getChannelsByWorkspaceId,
   getAllDmConversationsOfUser,
   getAllWorkspaces,
   createChannel,
-  leaveWorkspace
-} from '../../api/auth.api'
-import { toast } from 'react-toastify'
-import type { IChannel, IDirectMessage, IWorkspace } from '../../interfaces/Workspace'
-import { ErrorMessage } from '../../config/constants'
-import { useSelector } from 'react-redux'
-import { getAuthSelector } from '../../redux/selectors'
+  leaveWorkspace,
+} from "../../api/auth.api"
+import { toast } from "react-toastify"
+import type { IChannel, IDirectMessage, IWorkspace } from "../../interfaces/Workspace"
+import { ErrorMessage } from "../../config/constants"
+import { useSelector } from "react-redux"
+import { getAuthSelector } from "../../redux/selectors"
 
 const WorkspaceSidebar: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -44,7 +52,7 @@ const WorkspaceSidebar: React.FC = () => {
 
       try {
         const res = await getAllWorkspaces()
-        if (res.status === 'success') {
+        if (res.status === "success") {
           const currentWorkspace = res.data.find((ws: IWorkspace) => ws._id === workspaceId)
           if (currentWorkspace) {
             setWorkspace(currentWorkspace)
@@ -66,7 +74,7 @@ const WorkspaceSidebar: React.FC = () => {
     setIsLoading(true)
     try {
       const res = await getChannelsByWorkspaceId(workspaceId)
-      if (res.status === 'success') {
+      if (res.status === "success") {
         setChannels(res.data)
       }
     } catch (error: any) {
@@ -83,8 +91,8 @@ const WorkspaceSidebar: React.FC = () => {
   useEffect(() => {
     const fetchAllDm = async () => {
       try {
-        const res = await getAllDmConversationsOfUser(workspaceId ?? '')
-        if (res.status === 'success') {
+        const res = await getAllDmConversationsOfUser(workspaceId ?? "")
+        if (res.status === "success") {
           setAlldm(res.data)
         }
       } catch (error: any) {
@@ -99,7 +107,7 @@ const WorkspaceSidebar: React.FC = () => {
     try {
       if (!workspaceId) return
       const res = await createChannel(workspaceId, name, description)
-      if (res.status === 'success') {
+      if (res.status === "success") {
         const newChannel: IChannel = {
           _id: res.data._id,
           name,
@@ -107,11 +115,11 @@ const WorkspaceSidebar: React.FC = () => {
           description,
           createdAt: res.data.createdAt,
           updatedAt: res.data.updatedAt,
-          conversationId: res.data.conversationId || ''
+          conversationId: res.data.conversationId || "",
         }
         // Add to local state
         setChannels((prev) => [...prev, newChannel])
-        toast.success('Channel created successfully!')
+        toast.success("Channel created successfully!")
         setIsCreateChannelModalOpen(false)
       }
     } catch (error: any) {
@@ -129,10 +137,10 @@ const WorkspaceSidebar: React.FC = () => {
     try {
       setIsLeavingWorkspace(true)
       const response = await leaveWorkspace(workspaceId)
-      if (response.status === 'success') {
-        toast.success(response.message || 'Left workspace successfully')
+      if (response.status === "success") {
+        toast.success(response.message || "Left workspace successfully")
         // Navigate to home page after leaving workspace
-        navigate('/')
+        navigate("/")
       }
     } catch (error: any) {
       toast.error(error.response?.data?.message || ErrorMessage)
@@ -143,83 +151,92 @@ const WorkspaceSidebar: React.FC = () => {
   }
 
   return (
-    <div className='w-64 bg-gray-900 h-screen flex flex-col'>
-      <div className='p-4 border-b border-gray-700'>
-        <h1 className='text-white font-bold text-lg flex items-center'>
-          {workspace ? workspace.name : 'Loading workspace...'}
-          <span className='ml-auto text-gray-400 text-xs'>Y</span>
+    <div className="w-64 bg-gray-900 h-screen flex flex-col">
+      <div className="p-4 border-b border-gray-700">
+      <Button
+        color="light"
+        size="sm" // Increased from xs to sm for better proportions
+        className="w-full mb-2 flex items-center justify-center text-sm font-semibold py-2" // Adjusted text size and added more vertical padding
+        onClick={() => navigate("/")}
+      >
+        <HiArrowLeft className="mr-2 h-5 w-5" /> {/* Increased icon size */}
+        Back to Home
+      </Button>
+        <h1 className="text-white font-bold text-lg flex items-center">
+          {workspace ? workspace.name : "Loading workspace..."}
+          <span className="ml-auto text-gray-400 text-xs">Y</span>
         </h1>
         {isAdminWrokspace && (
-          <div className='flex space-x-2 mt-2'>
+          <div className="flex space-x-2 mt-2">
             <Button
-              color='light'
-              size='xs'
-              className='w-1/2'
+              color="light"
+              size="xs"
+              className="w-1/2"
               onClick={() => navigate(`/admin/workspace/${workspaceId}/channels`)}
             >
-              <HiShieldCheck className='mr-1 h-3 w-3' />
+              <HiShieldCheck className="mr-1 h-3 w-3" />
               Channels
             </Button>
             <Button
-              color='light'
-              size='xs'
-              className='w-1/2'
+              color="light"
+              size="xs"
+              className="w-1/2"
               onClick={() => navigate(`/admin/workspace/${workspaceId}/users`)}
             >
-              <HiShieldCheck className='mr-1 h-3 w-3' />
+              <HiShieldCheck className="mr-1 h-3 w-3" />
               Users
             </Button>
           </div>
         )}
 
         {isAdminWrokspace && (
-          <div className='mt-2'>
-            <Button color='blue' size='xs' className='w-full' onClick={handleInviteUsers}>
-              <HiUserAdd className='mr-1 h-3 w-3' />
+          <div className="mt-2">
+            <Button color="blue" size="xs" className="w-full" onClick={handleInviteUsers}>
+              <HiUserAdd className="mr-1 h-3 w-3" />
               Invite Users
             </Button>
           </div>
         )}
       </div>
 
-      <div className='flex-1 overflow-y-auto py-4'>
-        <div className='mb-4'>
+      <div className="flex-1 overflow-y-auto py-4">
+        <div className="mb-4">
           <div
-            className='flex items-center px-4 py-1 text-gray-300 cursor-pointer'
+            className="flex items-center px-4 py-1 text-gray-300 cursor-pointer"
             onClick={() => setChannelsExpanded(!channelsExpanded)}
           >
             {channelsExpanded ? (
-              <HiChevronDown className='h-4 w-4 mr-1' />
+              <HiChevronDown className="h-4 w-4 mr-1" />
             ) : (
-              <HiChevronRight className='h-4 w-4 mr-1' />
+              <HiChevronRight className="h-4 w-4 mr-1" />
             )}
-            <span className='text-sm font-medium'>CHANNELS</span>
+            <span className="text-sm font-medium">CHANNELS</span>
             <Button
-              id='create-channel-btn'
+              id="create-channel-btn"
               ref={createChannelBtnRef}
-              color='gray'
-              size='xs'
+              color="gray"
+              size="xs"
               pill
-              className='ml-auto p-1'
-              title='Add Channel'
+              className="ml-auto p-1"
+              title="Add Channel"
               onClick={(e: any) => {
                 e.stopPropagation()
                 setIsCreateChannelModalOpen(true)
               }}
             >
-              <HiPlus className='h-3 w-3' />
+              <HiPlus className="h-3 w-3" />
             </Button>
           </div>
           {channelsExpanded && (
-            <div className='mt-2 space-y-1'>
+            <div className="mt-2 space-y-1">
               {isLoading ? (
-                <div className='px-4 py-2 text-gray-400 text-sm'>Loading channels...</div>
+                <div className="px-4 py-2 text-gray-400 text-sm">Loading channels...</div>
               ) : channels.length > 0 ? (
                 channels.map((channel) => (
                   <ChannelItem key={channel._id} channel={channel} onChannelLeave={fetchChannels} />
                 ))
               ) : (
-                <div className='px-4 py-2 text-gray-400 text-sm'>No channels found</div>
+                <div className="px-4 py-2 text-gray-400 text-sm">No channels found</div>
               )}
             </div>
           )}
@@ -227,22 +244,22 @@ const WorkspaceSidebar: React.FC = () => {
 
         <div>
           <div
-            className='flex items-center px-4 py-1 text-gray-300 cursor-pointer'
+            className="flex items-center px-4 py-1 text-gray-300 cursor-pointer"
             onClick={() => setDirectMessagesExpanded(!directMessagesExpanded)}
           >
             {directMessagesExpanded ? (
-              <HiChevronDown className='h-4 w-4 mr-1' />
+              <HiChevronDown className="h-4 w-4 mr-1" />
             ) : (
-              <HiChevronRight className='h-4 w-4 mr-1' />
+              <HiChevronRight className="h-4 w-4 mr-1" />
             )}
-            <span className='text-sm font-medium'>DIRECT MESSAGES</span>
+            <span className="text-sm font-medium">DIRECT MESSAGES</span>
           </div>
           {directMessagesExpanded && (
-            <div className='mt-2 space-y-1'>
+            <div className="mt-2 space-y-1">
               {alldm.length > 0 ? (
                 alldm.map((dm) => <DirectMessageItem key={dm.conversationId} directMessage={dm} />)
               ) : (
-                <div className='px-4 py-2 text-gray-400 text-sm'>No direct messages</div>
+                <div className="px-4 py-2 text-gray-400 text-sm">No direct messages</div>
               )}
             </div>
           )}
@@ -250,15 +267,15 @@ const WorkspaceSidebar: React.FC = () => {
       </div>
 
       {/* Leave Workspace Button */}
-      <div className='p-4 border-t border-gray-700'>
+      <div className="p-4 border-t border-gray-700">
         <Button
-          color='failure'
-          size='xs'
-          className='w-full'
+          color="failure"
+          size="xs"
+          className="w-full"
           onClick={() => setShowLeaveWorkspaceConfirm(true)}
           disabled={isLeavingWorkspace}
         >
-          <HiLogout className='mr-1 h-3 w-3' />
+          <HiLogout className="mr-1 h-3 w-3" />
           Leave Workspace
         </Button>
       </div>
@@ -271,7 +288,7 @@ const WorkspaceSidebar: React.FC = () => {
 
       <ConfirmDialog
         show={showLeaveWorkspaceConfirm}
-        title='Leave Workspace'
+        title="Leave Workspace"
         message={`Are you sure you want to leave the "${workspace?.name}" workspace? You will need to be invited back to rejoin.`}
         onConfirm={handleLeaveWorkspace}
         onCancel={() => setShowLeaveWorkspaceConfirm(false)}
