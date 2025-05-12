@@ -23,6 +23,8 @@ interface MessageInputProps {
   directMessageName?: string
 }
 
+const MAX_FILE_SIZE = 40 * 1024 * 1024;
+
 const MessageInput: React.FC<MessageInputProps> = ({
   onSendMessage,
   onAttachFile,
@@ -84,6 +86,13 @@ const MessageInput: React.FC<MessageInputProps> = ({
     if (!conversationId) {
       toast.error('Conversation ID is missing')
       return
+    }
+
+    // Validate file sizes before sending
+    const oversizedFiles = selectedFiles.filter(file => file.size > MAX_FILE_SIZE);
+    if (oversizedFiles.length > 0) {
+      toast.error(`Some files exceed the 40MB limit: ${oversizedFiles.map(f => f.name).join(', ')}`);
+      return;
     }
 
     setIsSending(true)
@@ -160,6 +169,12 @@ const MessageInput: React.FC<MessageInputProps> = ({
   }
 
   const handleFileUpload = (file: File) => {
+    // Validate file size before adding
+    if (file.size > MAX_FILE_SIZE) {
+      toast.error(`File "${file.name}" exceeds the 40MB size limit`);
+      return;
+    }
+
     setSelectedFiles((prev) => [...prev, file])
     setShowFileUploadModal(false)
 
@@ -210,6 +225,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
           {selectedFiles.map((file, index) => (
             <div key={index} className='bg-gray-100 rounded px-2 py-1 text-sm flex items-center'>
               <span className='truncate max-w-[150px]'>{file.name}</span>
+              <span className='text-xs text-gray-500 ml-1'>
+                ({(file.size / (1024 * 1024)).toFixed(2)}MB)
+              </span>
               <button
                 type='button'
                 className='ml-1 text-gray-500 hover:text-gray-700'
@@ -305,6 +323,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
         isOpen={showFileUploadModal}
         onClose={() => setShowFileUploadModal(false)}
         onFileUpload={handleFileUpload}
+        maxFileSize={MAX_FILE_SIZE}
       />
     </form>
   )
