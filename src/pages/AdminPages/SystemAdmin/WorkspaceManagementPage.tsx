@@ -1,17 +1,18 @@
-import type React from "react"
-import { useState, useEffect } from "react"
-import { Button, Card, Table, Badge, TextInput, Pagination } from "flowbite-react"
-import { HiPlus, HiTrash, HiOfficeBuilding, HiSearch, HiArrowLeft } from "react-icons/hi"
-import { Link, useNavigate } from "react-router-dom"
-import { toast } from "react-toastify"
-import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog"
-import { ErrorMessage } from "../../../config/constants"
-import LoadingOverlay from "../../../components/LoadingPage/Loading"
-import { getAllWorkspacesAdmin, deleteWorkspaceAdmin, searchWorkspaces } from "../../../api/admin.api"
-import type { IWorkspaceAdmin } from "../../../interfaces/Workspace"
-import CreateWorkspaceModal from "../../../components/Workspace/CreateWorkspaceModal"
-import { createWorkspaces } from "../../../api/auth.api"
-import useDebounce from "../../../hooks/useDebounce"
+import type React from 'react'
+import { useState, useEffect } from 'react'
+import { Button, Card, Table, Badge, TextInput, Pagination } from 'flowbite-react'
+import { HiPlus, HiTrash, HiOfficeBuilding, HiSearch, HiArrowLeft } from 'react-icons/hi'
+import { Link, useNavigate } from 'react-router-dom'
+import { toast } from 'react-toastify'
+import ConfirmDialog from '../../../components/ConfirmDialog/ConfirmDialog'
+import { ErrorMessage } from '../../../config/constants'
+import LoadingOverlay from '../../../components/LoadingPage/Loading'
+import { getAllWorkspacesAdmin, deleteWorkspaceAdmin, searchWorkspaces } from '../../../api/admin.api'
+import type { IWorkspaceAdmin } from '../../../interfaces/Workspace'
+import CreateWorkspaceModal from '../../../components/Workspace/CreateWorkspaceModal'
+import { createWorkspaces } from '../../../api/auth.api'
+import useDebounce from '../../../hooks/useDebounce'
+import useAuth from '../../../hooks/useAuth'
 
 interface WorkspaceManagementPageProps {
   isEmbedded?: boolean
@@ -20,12 +21,13 @@ interface WorkspaceManagementPageProps {
 const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmbedded = false }) => {
   const [workspaces, setWorkspaces] = useState<IWorkspaceAdmin[]>([])
   const [isLoading, setIsLoading] = useState(true)
-  const [searchTerm, setSearchTerm] = useState("")
+  const [searchTerm, setSearchTerm] = useState('')
   const [showCreateModal, setShowCreateModal] = useState(false)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [currentWorkspace, setCurrentWorkspace] = useState<IWorkspaceAdmin | null>(null)
   const [isSearching, setIsSearching] = useState(false)
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
+  const { isAdmin } = useAuth()
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -34,7 +36,14 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
 
   const navigate = useNavigate()
 
-  // Fetch workspaces from API
+  // Check admin role first - separate from data fetching
+  useEffect(() => {
+    if (!isAdmin()) {
+      navigate('/forbidden')
+    }
+  }, [isAdmin, navigate])
+
+  // Fetch workspaces from API - simple and clean
   useEffect(() => {
     fetchWorkspaces()
   }, [currentPage])
@@ -43,21 +52,24 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
     setIsLoading(true)
     try {
       const response = await getAllWorkspacesAdmin(currentPage, limit)
-      if (response.status === "success") {
-        setWorkspaces(response.data.workspaces)
-        setCurrentPage(response.data.currentPage)
-        setTotalPages(response.data.totalPages)
+      if (response.status === 'success') {
+        setWorkspaces(response.data.workspaces || response.data)
+        setCurrentPage(response.data.currentPage || currentPage)
+        setTotalPages(response.data.totalPages || 1)
       } else {
-        toast.error("Failed to fetch workspaces")
+        toast.error('Failed to fetch workspaces')
       }
     } catch (error: any) {
       if (error.response) {
         const { statusCode, message } = error.response.data
         toast.error(message || ErrorMessage)
         if (statusCode === 403) {
-          navigate("/forbidden")
+          navigate('/forbidden')
         }
       }
+    } finally {
+      // Always set loading to false when done
+      setIsLoading(false)
     }
   }
 
@@ -67,18 +79,17 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
   }
 
   const handleCreateClick = () => {
-    setIsLoading(false)
     setShowCreateModal(true)
   }
 
   const handleCreateWorkspace = async (name: string, description: string) => {
     const newWorkspace = {
       name,
-      description,
+      description
     }
     try {
       const res = await createWorkspaces(newWorkspace)
-      if (res.status === "success") {
+      if (res.status === 'success') {
         fetchWorkspaces()
         toast.success(res.message)
       }
@@ -93,12 +104,11 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
     setIsLoading(true)
     try {
       const res = await deleteWorkspaceAdmin(currentWorkspace._id)
-      if (res.status === "success") {
+      if (res.status === 'success') {
         const updatedWorkspaces = workspaces.filter((workspace) => workspace._id !== currentWorkspace._id)
         setWorkspaces(updatedWorkspaces)
         setShowDeleteModal(false)
         setCurrentWorkspace(null)
-        setIsLoading(false)
         toast.success(res.message)
       }
     } catch (error: any) {
@@ -106,9 +116,12 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
         const { statusCode, message } = error.response.data
         toast.error(message || ErrorMessage)
         if (statusCode === 403) {
-          navigate("/forbidden")
+          navigate('/forbidden')
         }
       }
+    } finally {
+      // Always set loading to false when done
+      setIsLoading(false)
     }
   }
 
@@ -118,7 +131,7 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
       const updatedWorkspaces = workspaces.map((w) => (w._id === workspace._id ? { ...w, isLocked: !w.isLocked } : w))
 
       setWorkspaces(updatedWorkspaces)
-      toast.success(`Workspace ${workspace.isLocked ? "unlocked" : "locked"} successfully`)
+      toast.success(`Workspace ${workspace.isLocked ? 'unlocked' : 'locked'} successfully`)
     }, 500)
   }
 
@@ -128,17 +141,18 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
   }
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     })
   }
 
-  // useEffect for search
+  // useEffect for search - keep it simple
   useEffect(() => {
     if (!debouncedSearchTerm) {
-      if (searchTerm === "") { // gọi lại get all khi search trở về rỗng
+      if (searchTerm === '') {
+        // Call get all when search is cleared
         fetchWorkspaces()
       }
       return
@@ -148,17 +162,17 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
       setIsSearching(true)
       try {
         const response = await searchWorkspaces(debouncedSearchTerm, currentPage, limit)
-        if (response.status === "success") {
-          setWorkspaces(response.data.workspaces)
-          setCurrentPage(response.data.currentPage)
-          setTotalPages(response.data.totalPages)
+        if (response.status === 'success') {
+          setWorkspaces(response.data.workspaces || response.data)
+          setCurrentPage(response.data.currentPage || currentPage)
+          setTotalPages(response.data.totalPages || 1)
         }
       } catch (error: any) {
         if (error.response) {
           const { statusCode, message } = error.response.data
           toast.error(message || ErrorMessage)
           if (statusCode === 403) {
-            navigate("/forbidden")
+            navigate('/forbidden')
           }
         }
       } finally {
@@ -176,48 +190,49 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
     }
   }
 
+  // Simple loading condition
   if (isLoading && workspaces.length === 0) {
     return <LoadingOverlay isLoading={true} />
   }
 
   return (
-    <div className="container mx-auto p-6">
-      <div className="mb-6 flex justify-between items-center">
-        <div className="flex items-center">
+    <div className='container mx-auto p-6'>
+      <div className='mb-6 flex justify-between items-center'>
+        <div className='flex items-center'>
           {!isEmbedded && (
-            <Link to="/admin">
-              <Button color="light" size="sm" className="mr-4">
-                <HiArrowLeft className="mr-2 h-4 w-4" />
+            <Link to='/admin'>
+              <Button color='light' size='sm' className='mr-4'>
+                <HiArrowLeft className='mr-2 h-4 w-4' />
                 Back to Admin Dashboard
               </Button>
             </Link>
           )}
-          <h1 className="text-2xl font-bold">Workspace Management</h1>
+          <h1 className='text-2xl font-bold'>Workspace Management</h1>
         </div>
-        <Button color="blue" onClick={handleCreateClick}>
-          <HiPlus className="mr-2 h-4 w-4" />
+        <Button color='blue' onClick={handleCreateClick}>
+          <HiPlus className='mr-2 h-4 w-4' />
           Create Workspace
         </Button>
       </div>
 
-      <Card className="mb-6">
-        <div className="flex justify-between items-center mb-4">
-          <h2 className="text-xl font-semibold">All Workspaces</h2>
-          <div className="relative w-64">
-            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-              <HiSearch className="w-5 h-5 text-gray-500" />
+      <Card className='mb-6'>
+        <div className='flex justify-between items-center mb-4'>
+          <h2 className='text-xl font-semibold'>All Workspaces</h2>
+          <div className='relative w-64'>
+            <div className='absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none'>
+              <HiSearch className='w-5 h-5 text-gray-500' />
             </div>
             <TextInput
-              type="search"
-              placeholder="Search workspaces..."
+              type='search'
+              placeholder='Search workspaces...'
               value={searchTerm}
               onChange={handleSearchChange}
-              className="pl-10"
+              className='pl-10'
             />
           </div>
         </div>
 
-        <div className="overflow-x-auto">
+        <div className='overflow-x-auto'>
           <Table hoverable>
             <Table.Head>
               <Table.HeadCell>Name</Table.HeadCell>
@@ -229,42 +244,42 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
               <Table.HeadCell>Status</Table.HeadCell>
               <Table.HeadCell>Actions</Table.HeadCell>
             </Table.Head>
-            <Table.Body className="divide-y">
+            <Table.Body className='divide-y'>
               {isSearching ? (
                 <Table.Row>
-                  <Table.Cell colSpan={8} className="text-center py-4">
-                    <div className="flex justify-center">
-                      <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
+                  <Table.Cell colSpan={8} className='text-center py-4'>
+                    <div className='flex justify-center'>
+                      <div className='h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin'></div>
                     </div>
                   </Table.Cell>
                 </Table.Row>
               ) : workspaces.length > 0 ? (
                 workspaces.map((workspace) => (
-                  <Table.Row key={workspace._id} className="bg-white">
-                    <Table.Cell className="font-medium text-gray-900">
-                      <div className="flex items-center">
-                        <HiOfficeBuilding className="mr-2 h-5 w-5 text-blue-600" />
+                  <Table.Row key={workspace._id} className='bg-white'>
+                    <Table.Cell className='font-medium text-gray-900'>
+                      <div className='flex items-center'>
+                        <HiOfficeBuilding className='mr-2 h-5 w-5 text-blue-600' />
                         {workspace.name}
                       </div>
                     </Table.Cell>
-                    <Table.Cell className="max-w-xs truncate">{workspace.description}</Table.Cell>
+                    <Table.Cell className='max-w-xs truncate'>{workspace.description}</Table.Cell>
                     <Table.Cell>{workspace.admin.name}</Table.Cell>
                     <Table.Cell>{workspace.numberOfMembers}</Table.Cell>
                     <Table.Cell>{workspace.numberOfChannels}</Table.Cell>
                     <Table.Cell>{formatDate(workspace.createdAt)}</Table.Cell>
                     <Table.Cell>
                       <Badge
-                        color={workspace.isLocked ? "gray" : "success"}
+                        color={workspace.isLocked ? 'gray' : 'success'}
                         onClick={() => handleToggleStatus(workspace)}
-                        className="cursor-pointer"
+                        className='cursor-pointer'
                       >
-                        {workspace.isLocked ? "Locked" : "Active"}
+                        {workspace.isLocked ? 'Locked' : 'Active'}
                       </Badge>
                     </Table.Cell>
                     <Table.Cell>
-                      <div className="flex space-x-2">
-                        <Button color="failure" size="xs" onClick={() => handleDeleteClick(workspace)}>
-                          <HiTrash className="h-4 w-4" />
+                      <div className='flex space-x-2'>
+                        <Button color='failure' size='xs' onClick={() => handleDeleteClick(workspace)}>
+                          <HiTrash className='h-4 w-4' />
                         </Button>
                       </div>
                     </Table.Cell>
@@ -272,8 +287,8 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
                 ))
               ) : (
                 <Table.Row>
-                  <Table.Cell colSpan={8} className="text-center py-4">
-                    {searchTerm ? "No workspaces found matching your search" : "No workspaces found"}
+                  <Table.Cell colSpan={8} className='text-center py-4'>
+                    {searchTerm ? 'No workspaces found matching your search' : 'No workspaces found'}
                   </Table.Cell>
                 </Table.Row>
               )}
@@ -282,7 +297,7 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
         </div>
 
         {totalPages > 1 && (
-          <div className="flex justify-center mt-4">
+          <div className='flex justify-center mt-4'>
             <Pagination currentPage={currentPage} totalPages={totalPages} onPageChange={onPageChange} showIcons />
           </div>
         )}
@@ -296,7 +311,7 @@ const WorkspaceManagementPage: React.FC<WorkspaceManagementPageProps> = ({ isEmb
 
       <ConfirmDialog
         show={showDeleteModal}
-        title="Delete Workspace"
+        title='Delete Workspace'
         message={`Are you sure you want to delete the workspace "${currentWorkspace?.name}"? This action will permanently delete the workspace and all its channels. This cannot be undone.`}
         onConfirm={handleDeleteWorkspace}
         onCancel={() => setShowDeleteModal(false)}

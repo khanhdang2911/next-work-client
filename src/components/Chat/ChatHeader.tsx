@@ -114,6 +114,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
     } else {
       setSearchResults([])
       setNoResultsFound(false)
+      setIsSearching(false) // Stop loading when query is empty
       if (query.length === 0) {
         setShowSearchResults(false)
       }
@@ -136,9 +137,6 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
       // Create a conversation or get existing one
       const response = await createDirectConversation(workspaceId, [currentUserId, userId])
 
-      // Extract the conversationId - handles both cases:
-      // 1. New conversation: response.data._id
-      // 2. Existing conversation: response.data.conversationId
       const conversationId = response.data.conversationId || response.data._id
 
       // Navigate to the conversation
@@ -195,9 +193,9 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
         )}
       </div>
 
-      <div className='flex items-center space-x-2'>
+      <div className='flex items-center space-x-2 w-[60%] ml-4'>
         {/* Search component - Now wider */}
-        <div className='relative flex-grow max-w-md' ref={searchRef}>
+        <div className='relative flex-grow w-full' ref={searchRef}>
           <div className='flex items-center bg-gray-100 rounded-lg px-3 py-1.5 w-full'>
             <HiSearch className='h-4 w-4 text-gray-500' />
             <input

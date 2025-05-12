@@ -16,6 +16,7 @@ export default function Login() {
   const auth: any = useSelector(getAuthSelector)
   const { loginWithRedirect, isAuthenticated, user, getAccessTokenSilently } = useAuth0()
   const [isLoading, setIsLoading] = useState(false)
+  const [isGoogleLoading, setIsGoogleLoading] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [rememberMe, setRememberMe] = useState(false)
@@ -27,28 +28,31 @@ export default function Login() {
 
   useEffect(() => {
     const handleLoginWithAuth0 = async () => {
-      const accessToken = await getAccessTokenSilently()
-      const response = await loginWithAuth0(user, accessToken)
-      if (response.status === 'success') {
-        dispatch(authSlice.actions.setUser(response.data))
-      }
+      try {
+        setIsGoogleLoading(true)
+        const accessToken = await getAccessTokenSilently()
+        const response = await loginWithAuth0(user, accessToken)
+        if (response.status === 'success') {
+          dispatch(authSlice.actions.setUser(response.data))
+        }
 
-      // Check if there's a pending invitation redirect
-      const redirectPath = sessionStorage.getItem('invitationRedirect')
-      if (redirectPath) {
-        sessionStorage.removeItem('invitationRedirect')
-        navigate(redirectPath)
-      } else {
-        navigate('/')
+        // Check if there's a pending invitation redirect
+        const redirectPath = sessionStorage.getItem('invitationRedirect')
+        if (redirectPath) {
+          sessionStorage.removeItem('invitationRedirect')
+          navigate(redirectPath)
+        } else {
+          navigate('/')
+        }
+      } catch (error) {
+        toast.error('Error when login with Auth0.')
+      } finally {
+        setIsGoogleLoading(false)
       }
     }
 
-    try {
-      if (isAuthenticated) {
-        handleLoginWithAuth0()
-      }
-    } catch (error) {
-      toast.error('Error when login with Auth0.')
+    if (isAuthenticated) {
+      handleLoginWithAuth0()
     }
   }, [isAuthenticated])
 
@@ -84,13 +88,16 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
+      setIsGoogleLoading(true)
       await loginWithRedirect({
         authorizationParams: {
-          connection: 'google-oauth2'
+          connection: 'google-oauth2',
+          prompt: 'select_account' // Force account selection popup
         }
       })
     } catch (error) {
       toast.error('Error when login with Google.')
+      setIsGoogleLoading(false)
     }
   }
 
@@ -168,9 +175,23 @@ export default function Login() {
             </div>
           </div>
           <div className='mt-6'>
-            <Button onClick={handleGoogleLogin} color='light' className='w-full flex items-center justify-center'>
-              <img className='w-4 h-4 mt-0.5 mr-1' src={Google || '/placeholder.svg'} alt='google' />
-              <p>Google</p>
+            <Button
+              onClick={handleGoogleLogin}
+              color='light'
+              className='w-full flex items-center justify-center'
+              disabled={isGoogleLoading}
+            >
+              {isGoogleLoading ? (
+                <>
+                  <div className='h-4 w-4 border-2 border-t-transparent border-blue-600 rounded-full animate-spin mr-2'></div>
+                  <span>Connecting to Google...</span>
+                </>
+              ) : (
+                <>
+                  <img className='w-4 h-4 mt-0.5 mr-1' src={Google || '/placeholder.svg'} alt='google' />
+                  <p>Google</p>
+                </>
+              )}
             </Button>
           </div>
         </div>
@@ -182,7 +203,7 @@ export default function Login() {
           </Link>
         </p>
       </Card>
-      <LoadingOverlay isLoading={isLoading} />
+      <LoadingOverlay isLoading={isLoading || isGoogleLoading} />
     </div>
   )
 }
