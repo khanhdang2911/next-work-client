@@ -1,29 +1,29 @@
-import type React from 'react'
-import { useState, useEffect, useCallback, useRef } from 'react'
-import { useParams } from 'react-router-dom'
-import ChatHeader from './ChatHeader'
-import MessageItem from './MessageItem'
-import MessageInput from './MessageInput'
-import type { IMessage, IChannel, IDirectMessage } from '../../interfaces/Workspace'
+import type React from "react"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { useParams } from "react-router-dom"
+import ChatHeader from "./ChatHeader"
+import MessageItem from "./MessageItem"
+import MessageInput from "./MessageInput"
+import type { IMessage, IChannel, IDirectMessage } from "../../interfaces/Workspace"
 import {
   getMessagebyConversationId,
   getChannelsByWorkspaceId,
   getAllDmConversationsOfUser,
   updateMessage,
   deleteMessage,
-  reactToMessage
-} from '../../api/auth.api'
-import { toast } from 'react-toastify'
-import { ErrorMessage } from '../../config/constants'
-import useSocket from '../../hooks/useSocket'
+  reactToMessage,
+} from "../../api/auth.api"
+import { toast } from "react-toastify"
+import { ErrorMessage } from "../../config/constants"
+import useSocket from "../../hooks/useSocket"
 import {
   sendMessage,
   editMessage as socketEditMessage,
   deleteMessage as socketDeleteMessage,
-  reactMessage as socketReactMessage
-} from '../../config/socket'
-import { useSelector } from 'react-redux'
-import { getAuthSelector } from '../../redux/selectors'
+  reactMessage as socketReactMessage,
+} from "../../config/socket"
+import { useSelector } from "react-redux"
+import { getAuthSelector } from "../../redux/selectors"
 
 const ChatArea: React.FC = () => {
   const { directMessageId, conversationId, workspaceId } = useParams<{
@@ -46,7 +46,7 @@ const ChatArea: React.FC = () => {
 
   // Scroll to bottom of messages
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }
 
   // Fetch current channel details
@@ -56,7 +56,7 @@ const ChatArea: React.FC = () => {
 
       try {
         const res = await getChannelsByWorkspaceId(workspaceId)
-        if (res.status === 'success') {
+        if (res.status === "success") {
           const channel = res.data.find((ch: IChannel) => ch.conversationId === conversationId)
           if (channel) {
             setCurrentChannel(channel)
@@ -79,8 +79,8 @@ const ChatArea: React.FC = () => {
       if (!conversationId) return
 
       try {
-        const res = await getAllDmConversationsOfUser(workspaceId || '')
-        if (res.status === 'success') {
+        const res = await getAllDmConversationsOfUser(workspaceId || "")
+        if (res.status === "success") {
           const dm = res.data.find((dm: IDirectMessage) => dm.conversationId === conversationId)
           if (dm) {
             setCurrentDirectMessage(dm)
@@ -106,7 +106,7 @@ const ChatArea: React.FC = () => {
 
       try {
         const res = await getMessagebyConversationId(conversationId)
-        if (res.status === 'success') {
+        if (res.status === "success") {
           setMessages(res.data)
           setTimeout(scrollToBottom, 100)
         }
@@ -119,7 +119,7 @@ const ChatArea: React.FC = () => {
         }
       }
     },
-    [conversationId]
+    [conversationId],
   )
 
   useEffect(() => {
@@ -157,16 +157,16 @@ const ChatArea: React.FC = () => {
             prev.map((msg) => {
               if (msg._id === reactedMessage._id) {
                 // Preserve the sender object structure
-                if (typeof msg.senderId !== 'string' && typeof reactedMessage.senderId === 'string') {
+                if (typeof msg.senderId !== "string" && typeof reactedMessage.senderId === "string") {
                   reactedMessage.senderId = msg.senderId
                 }
                 return reactedMessage
               }
               return msg
-            })
+            }),
           )
         }
-      }
+      },
     )
 
     return cleanup
@@ -176,7 +176,7 @@ const ChatArea: React.FC = () => {
   const handleSendMessage = useCallback(
     (messageOrContent: string | IMessage) => {
       // If it's a string (from editing), convert to IMessage
-      if (typeof messageOrContent === 'string') {
+      if (typeof messageOrContent === "string") {
         // This case is for editing messages
         return
       }
@@ -191,8 +191,8 @@ const ChatArea: React.FC = () => {
         senderId: {
           _id: currentUser._id,
           name: currentUser.name,
-          avatar: currentUser.avatar || ''
-        }
+          avatar: currentUser.avatar || "",
+        },
       }
 
       // Add message to local state immediately for better UX
@@ -204,7 +204,7 @@ const ChatArea: React.FC = () => {
       // Scroll to bottom
       setTimeout(scrollToBottom, 100)
     },
-    [auth.user]
+    [auth.user],
   )
 
   const handleAttachFile = useCallback(() => {}, [currentChannel?._id, directMessageId])
@@ -220,12 +220,12 @@ const ChatArea: React.FC = () => {
         if (!messageToUpdate) return
 
         const res = await updateMessage(editingMessageId!, content)
-        if (res.status === 'success') {
+        if (res.status === "success") {
           const updatedMessage = {
             ...messageToUpdate,
             content,
             updatedAt: res.updatedAt ?? new Date().toISOString(),
-            isEdited: true // Make sure we set isEdited to true
+            isEdited: true, // Make sure we set isEdited to true
           }
 
           // Update in local state
@@ -240,7 +240,7 @@ const ChatArea: React.FC = () => {
         toast.error(error.response?.data?.message || ErrorMessage)
       }
     },
-    [editingMessageId, messages]
+    [editingMessageId, messages],
   )
 
   const handleDeleteMessage = useCallback(
@@ -250,7 +250,7 @@ const ChatArea: React.FC = () => {
         if (!messageToDelete) return
 
         const res = await deleteMessage(messageId)
-        if (res.status === 'success') {
+        if (res.status === "success") {
           // Remove from local state
           setMessages((prev) => prev.filter((message) => message._id !== messageId))
 
@@ -261,7 +261,7 @@ const ChatArea: React.FC = () => {
         toast.error(error.response?.data?.message || ErrorMessage)
       }
     },
-    [messages]
+    [messages],
   )
 
   const handleReactToMessage = useCallback(
@@ -273,12 +273,12 @@ const ChatArea: React.FC = () => {
         // Call the API to react to the message
         const res = await reactToMessage(messageId, emoji)
 
-        if (res.status === 'success') {
+        if (res.status === "success") {
           // Get the updated message with new reaction data
           const updatedMessage = res.data
 
           // Preserve the sender object structure if it exists
-          if (typeof messageToReact.senderId !== 'string' && typeof updatedMessage.senderId === 'string') {
+          if (typeof messageToReact.senderId !== "string" && typeof updatedMessage.senderId === "string") {
             updatedMessage.senderId = messageToReact.senderId
           }
 
@@ -292,31 +292,31 @@ const ChatArea: React.FC = () => {
         toast.error(error.response?.data?.message || ErrorMessage)
       }
     },
-    [messages]
+    [messages],
   )
 
   if (isLoading) {
     return (
-      <div className='flex-1 flex flex-col h-screen'>
+      <div className="flex-1 flex flex-col h-full">
         <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} onlineUsers={onlineUsers} />
-        <div className='flex-1 flex items-center justify-center'>
-          <div className='h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin'></div>
+        <div className="flex-1 flex items-center justify-center">
+          <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
         </div>
       </div>
     )
   }
 
   return (
-    <div className='flex-1 flex flex-col h-screen'>
+    <div className="flex-1 flex flex-col h-full">
       <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} onlineUsers={onlineUsers} />
 
-      <div className='flex-1 overflow-y-auto'>
-        <div className='py-4'>
+      <div className="flex-1 overflow-y-auto">
+        <div className="py-4">
           {currentChannel?.description && (
-            <div className='px-4 pb-4'>
-              <div className='bg-gray-100 dark:bg-gray-700 p-3 rounded-lg'>
-                <h3 className='font-semibold text-gray-800 dark:text-gray-200 mb-1'>Channel Description</h3>
-                <p className='text-gray-600 dark:text-gray-300'>{currentChannel.description}</p>
+            <div className="px-4 pb-4">
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">Channel Description</h3>
+                <p className="text-gray-600 dark:text-gray-300">{currentChannel.description}</p>
               </div>
             </div>
           )}
@@ -324,15 +324,15 @@ const ChatArea: React.FC = () => {
             messages.map((message) => {
               if (editingMessageId === message._id) {
                 return (
-                  <div key={message._id} className='py-2 px-4'>
-                    <div className='flex items-center mb-2'>
-                      <span className='font-semibold'>
-                        {typeof message.senderId === 'string' ? 'Unknown User' : message.senderId.name}
+                  <div key={message._id} className="py-2 px-4">
+                    <div className="flex items-center mb-2">
+                      <span className="font-semibold">
+                        {typeof message.senderId === "string" ? "Unknown User" : message.senderId.name}
                       </span>
                     </div>
                     <MessageInput
                       onSendMessage={(content) => {
-                        if (typeof content === 'string') {
+                        if (typeof content === "string") {
                           handleUpdateMessage(content)
                         }
                       }}
@@ -352,15 +352,15 @@ const ChatArea: React.FC = () => {
                   onEdit={handleEditMessage}
                   onDelete={handleDeleteMessage}
                   onReact={handleReactToMessage}
-                  isOnline={typeof message.senderId !== 'string' && onlineUsers.includes(message.senderId._id)}
+                  isOnline={typeof message.senderId !== "string" && onlineUsers.includes(message.senderId._id)}
                 />
               )
             })
           ) : (
-            <div className='flex items-center justify-center h-full p-8'>
-              <div className='text-center text-gray-500'>
-                <p className='text-lg mb-2'>No messages yet</p>
-                <p className='text-sm'>Be the first to send a message!</p>
+            <div className="flex items-center justify-center h-full p-8">
+              <div className="text-center text-gray-500">
+                <p className="text-lg mb-2">No messages yet</p>
+                <p className="text-sm">Be the first to send a message!</p>
               </div>
             </div>
           )}
