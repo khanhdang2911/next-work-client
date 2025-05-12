@@ -7,24 +7,46 @@ interface FileUploadModalProps {
   isOpen: boolean
   onClose: () => void
   onFileUpload: (file: File) => void
+  maxFileSize?: number
 }
 
-const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFileUpload }) => {
+const FileUploadModal: React.FC<FileUploadModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onFileUpload, 
+  maxFileSize = 40 * 1024 * 1024
+}) => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [uploadProgress, setUploadProgress] = useState(0)
   const [isUploading, setIsUploading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null)
+    
     if (e.target.files && e.target.files.length > 0) {
-      setSelectedFile(e.target.files[0])
+      const file = e.target.files[0]
+      
+      if (file.size > maxFileSize) {
+        setError(`File size exceeds the limit of ${formatFileSize(maxFileSize)}`)
+        return
+      }
+      
+      setSelectedFile(file)
     }
   }
 
   const handleUpload = () => {
     if (!selectedFile) return
 
+    if (selectedFile.size > maxFileSize) {
+      setError(`File size exceeds the limit of ${formatFileSize(maxFileSize)}`)
+      return
+    }
+
     setIsUploading(true)
+    setError(null)
 
     // Simulate upload progress
     let progress = 0
@@ -46,6 +68,7 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
     setSelectedFile(null)
     setUploadProgress(0)
     setIsUploading(false)
+    setError(null)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -76,8 +99,15 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
             >
               <HiUpload className='mx-auto h-12 w-12 text-gray-400' />
               <p className='mt-2 text-sm text-gray-600'>Click to upload</p>
-              <p className='text-xs text-gray-500'>PDF, DOC, XLS, JPG, PNG,... (Max. 40MB)</p>
-              <input ref={fileInputRef} type='file' className='hidden' onChange={handleFileChange} />
+              <p className='text-xs text-gray-500'>
+                PDF, DOC, XLS, JPG, PNG,... (Max: {formatFileSize(maxFileSize)})
+              </p>
+              <input 
+                ref={fileInputRef} 
+                type='file' 
+                className='hidden' 
+                onChange={handleFileChange} 
+              />
             </div>
           ) : (
             <div className='border rounded-lg p-4'>
@@ -109,13 +139,23 @@ const FileUploadModal: React.FC<FileUploadModalProps> = ({ isOpen, onClose, onFi
               </div>
             </div>
           )}
+
+          {error && (
+            <div className='text-red-600 text-sm mt-2'>
+              {error}
+            </div>
+          )}
         </div>
       </Modal.Body>
       <Modal.Footer>
         <Button color='gray' onClick={handleClose}>
           Cancel
         </Button>
-        <Button color='blue' onClick={handleUpload} disabled={!selectedFile || isUploading}>
+        <Button 
+          color='blue' 
+          onClick={handleUpload} 
+          disabled={!selectedFile || isUploading || !!error}
+        >
           {isUploading ? 'Uploading...' : 'Upload'}
         </Button>
       </Modal.Footer>
