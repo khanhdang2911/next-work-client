@@ -19,7 +19,6 @@ import type { IChannel, IDirectMessage, IWorkspace } from '../../interfaces/Work
 import { ErrorMessage } from '../../config/constants'
 import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
-import useAuth from '../../hooks/useAuth'
 
 const WorkspaceSidebar: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -30,14 +29,13 @@ const WorkspaceSidebar: React.FC = () => {
   const [alldm, setAlldm] = useState<IDirectMessage[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [workspace, setWorkspace] = useState<IWorkspace | null>(null)
-  const [isAdmin, setIsAdmin] = useState(false)
+  const [isAdminWrokspace, setIsAdminWrokspace] = useState(false)
   const [showLeaveWorkspaceConfirm, setShowLeaveWorkspaceConfirm] = useState(false)
   const [isLeavingWorkspace, setIsLeavingWorkspace] = useState(false)
   const createChannelBtnRef = useRef<HTMLButtonElement>(null)
   const navigate = useNavigate()
   const auth: any = useSelector(getAuthSelector)
   const currentUserId = auth.user?._id
-  const { canAccessWorkspaceAdmin } = useAuth()
 
   // Fetch workspace details to get the name and check if user is admin
   useEffect(() => {
@@ -51,7 +49,7 @@ const WorkspaceSidebar: React.FC = () => {
           if (currentWorkspace) {
             setWorkspace(currentWorkspace)
             // Check if current user is the admin of this workspace
-            setIsAdmin(currentWorkspace.admin === currentUserId)
+            setIsAdminWrokspace(currentWorkspace.admin === currentUserId)
           }
         }
       } catch (error: any) {
@@ -144,9 +142,6 @@ const WorkspaceSidebar: React.FC = () => {
     }
   }
 
-  // Check if user has admin access to workspace (either system admin or workspace admin)
-  const hasWorkspaceAdminAccess = canAccessWorkspaceAdmin() || isAdmin
-
   return (
     <div className='w-64 bg-gray-900 h-screen flex flex-col'>
       <div className='p-4 border-b border-gray-700'>
@@ -154,7 +149,7 @@ const WorkspaceSidebar: React.FC = () => {
           {workspace ? workspace.name : 'Loading workspace...'}
           <span className='ml-auto text-gray-400 text-xs'>Y</span>
         </h1>
-        {hasWorkspaceAdminAccess && (
+        {isAdminWrokspace && (
           <div className='flex space-x-2 mt-2'>
             <Button
               color='light'
@@ -177,7 +172,7 @@ const WorkspaceSidebar: React.FC = () => {
           </div>
         )}
 
-        {hasWorkspaceAdminAccess && (
+        {isAdminWrokspace && (
           <div className='mt-2'>
             <Button color='blue' size='xs' className='w-full' onClick={handleInviteUsers}>
               <HiUserAdd className='mr-1 h-3 w-3' />

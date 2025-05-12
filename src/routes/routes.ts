@@ -114,7 +114,7 @@ const privateRoutes: IRoute[] = [
     path: routes.adminWorkspaces,
     component: WorkspaceManagementPage,
     layout: null,
-    requiredRoles: ['admin']
+    requiredRoles: ['workspace_admin']
   },
   {
     path: routes.adminUsers,

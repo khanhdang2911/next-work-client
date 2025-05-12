@@ -99,9 +99,9 @@ export const useAuth = () => {
   }
 
   // Check if user can access workspace admin features
-  const canAccessWorkspaceAdmin = (): boolean => {
-    return isAdmin() || isWorkspaceAdmin()
-  }
+  // const canAccessWorkspaceAdmin = (): boolean => {
+  //   return isAdmin() || isWorkspaceAdmin()
+  // }
 
   const checkAccess = (requiredRoles: string[] = []): boolean => {
     if (!isAuthenticated) return false
@@ -133,7 +133,7 @@ export const useAuth = () => {
     isAdmin,
     isWorkspaceAdmin,
     requireAdmin,
-    canAccessWorkspaceAdmin,
+    // canAccessWorkspaceAdmin,
     user: auth?.user,
     checkAccess,
     requireAuth,
