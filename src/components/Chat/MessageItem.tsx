@@ -2,7 +2,7 @@
 
 import React, { useState, useMemo, useRef } from "react"
 import { Avatar, Button, Dropdown } from "flowbite-react"
-import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiEye } from "react-icons/hi"
+import { HiDotsVertical, HiPencil, HiTrash, HiEmojiHappy, HiEye, HiX } from "react-icons/hi"
 import { formatTime } from "../../utils/formatUtils"
 import type { IMessage, ISender } from "../../interfaces/Workspace"
 import { useNavigate } from "react-router-dom"
@@ -28,6 +28,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     const [showActions, setShowActions] = useState(false)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+    const [zoomedImage, setZoomedImage] = useState<string | null>(null)
     const emojiPickerRef = useRef<HTMLDivElement>(null)
     const emojiButtonRef = useRef<HTMLButtonElement>(null)
     const navigate = useNavigate()
@@ -44,7 +45,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       const codeBlockRegex = /```([\s\S]*?)```/g
       content = content.replace(
         codeBlockRegex,
-        '<pre class="bg-gray-800 text-green-400 p-3 rounded-md my-2 overflow-x-auto font-mono text-sm">$1</pre>',
+        '<pre class="bg-gray-800 text-green-400 p-3 rounded-md my-2 overflow-x-auto font-mono text-sm max-w-[50%]">$1</pre>',
       )
 
       // Replace **text** with <strong>text</strong> for bold
@@ -62,10 +63,10 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       // Replace list items (- item) with proper list formatting
       content = content.replace(/^- (.*)$/gm, "• $1")
 
-      // Replace numbered list items
+      // Fix numbered list items - use a div with flex instead of spans to avoid unwanted spacing
       content = content.replace(
-        /^(\d+)\. (.*)$/gm,
-        '<span class="flex"><span class="mr-2">$1.</span><span>$2</span></span>',
+        /(\d+)\. (.*?)(?=<br>\d+\.|<br>$|$)/g,
+        '<div class="flex items-start mb-1"><span class="mr-2 flex-shrink-0">$1.</span><div>$2</div></div>',
       )
 
       return content
@@ -137,6 +138,16 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     // Check if a file is an image
     const isImageFile = (type: string) => {
       return type.startsWith("image/")
+    }
+
+    // Handle image click for zoom
+    const handleImageClick = (imageUrl: string) => {
+      setZoomedImage(imageUrl)
+    }
+
+    // Close zoomed image
+    const closeZoomedImage = () => {
+      setZoomedImage(null)
     }
 
     // If user is not an object, render a simplified message
@@ -261,13 +272,14 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
               {message.attachments.map((attachment) => (
                 <div key={attachment.id} className="mt-2">
                   {isImageFile(attachment.type) ? (
-                    // Display images directly
+                    // Display images with click-to-zoom
                     <div key={`image-${attachment.id}`} className="mt-2">
                       <img
                         src={attachment.url || "/placeholder.svg"}
                         alt={attachment.name}
-                        className="max-w-md rounded-md border border-gray-200"
+                        className="max-w-md rounded-md border border-gray-200 cursor-pointer transition-transform hover:opacity-90"
                         style={{ maxHeight: "300px" }}
+                        onClick={() => handleImageClick(attachment.url || "/placeholder.svg")}
                       />
                       <div className="mt-1 text-xs text-gray-500">
                         {attachment.name} ({attachment.size} MB)
@@ -358,6 +370,28 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
             </div>
           )}
         </div>
+
+        {zoomedImage && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50"
+            onClick={closeZoomedImage}
+          >
+            <div className="relative max-w-4xl max-h-screen p-4">
+              <button
+                className="absolute top-4 right-4 bg-white rounded-full p-2 text-gray-800 hover:bg-gray-200"
+                onClick={closeZoomedImage}
+              >
+                <HiX className="h-6 w-6" />
+              </button>
+              <img
+                src={zoomedImage || "/placeholder.svg"}
+                alt="Zoomed image"
+                className="max-w-full max-h-[90vh] object-contain"
+                onClick={(e) => e.stopPropagation()}
+              />
+            </div>
+          </div>
+        )}
       </div>
     )
   },
