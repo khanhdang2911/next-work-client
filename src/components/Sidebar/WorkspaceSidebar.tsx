@@ -119,6 +119,7 @@ const WorkspaceSidebar: React.FC = () => {
         }
         // Add to local state
         setChannels((prev) => [...prev, newChannel])
+        fetchChannels()
         toast.success("Channel created successfully!")
         setIsCreateChannelModalOpen(false)
       }
