@@ -22,6 +22,7 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false)
   const dispatch = useDispatch()
   const navigate = useNavigate()
+  const { logout } = useAuth0()
 
   // Check if there's a pending invitation redirect
   const invitationRedirect = sessionStorage.getItem('invitationRedirect')
@@ -44,8 +45,12 @@ export default function Login() {
         } else {
           navigate('/')
         }
-      } catch (error) {
-        toast.error('Error when login with Auth0.')
+      } catch (error: any) {
+        toast.error(error?.response?.data?.message ?? 'Login failed. Please try again.')
+        // delete token and logout
+        // logout google
+        await logout({ logoutParams: { returnTo: `${window.location.origin}/login` } })
+        navigate('/login')
       } finally {
         setIsGoogleLoading(false)
       }
