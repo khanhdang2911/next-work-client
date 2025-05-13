@@ -1,18 +1,35 @@
-export default function LoadingOverlay({ isLoading }: Readonly<{ isLoading: boolean }>) {
-  if (!isLoading) return null;
+export interface LoadingProps {
+  size?: "sm" | "md" | "lg"
+  fullPage?: boolean
+  text?: string
+}
 
-  return (
-    <div className="fixed inset-0 z-50">
-      {/* Blur overlay for underlying content */}
-      <div className="absolute inset-0 backdrop-blur-md"></div>
-      
-      {/* Centered loading content */}
-      <div className="absolute inset-0 flex items-center justify-center">
-        <div className="flex flex-col items-center">
-          <div className="h-12 w-12 animate-spin rounded-full border-4 border-slate-600 border-t-transparent"></div>
-          <p className="mt-4 text-lg font-medium text-slate-700">Loading...</p>
+export default function LoadingIndicator({ size = "md", fullPage = false, text }: LoadingProps) {
+  const sizeClasses = {
+    sm: "h-4 w-4 border-2",
+    md: "h-8 w-8 border-4",
+    lg: "h-12 w-12 border-4",
+  }
+
+  const spinner = (
+    <div className={`${sizeClasses[size]} border-t-blue-500 border-blue-200 rounded-full animate-spin`}></div>
+  )
+
+  if (fullPage) {
+    return (
+      <div className="fixed inset-0 bg-white bg-opacity-75 flex justify-center items-center z-50">
+        <div className="text-center">
+          {spinner}
+          {text && <p className="mt-2 text-gray-600">{text}</p>}
         </div>
       </div>
+    )
+  }
+
+  return (
+    <div className="flex justify-center items-center p-4">
+      {spinner}
+      {text && <p className="ml-2 text-gray-600">{text}</p>}
     </div>
-  );
+  )
 }

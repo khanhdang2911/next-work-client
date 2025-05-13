@@ -2,15 +2,7 @@ import type React from "react"
 import { useState, useEffect, useRef } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { Button } from "flowbite-react"
-import {
-  HiChevronDown,
-  HiChevronRight,
-  HiPlus,
-  HiUserAdd,
-  HiShieldCheck,
-  HiLogout,
-  HiArrowLeft,
-} from "react-icons/hi"
+import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd, HiShieldCheck, HiLogout, HiArrowLeft } from "react-icons/hi"
 import ChannelItem from "./ChannelItem"
 import DirectMessageItem from "./DirectMessageItem"
 import CreateChannelModal from "./CreateChannelModal"
@@ -27,6 +19,7 @@ import type { IChannel, IDirectMessage, IWorkspace } from "../../interfaces/Work
 import { ErrorMessage } from "../../config/constants"
 import { useSelector } from "react-redux"
 import { getAuthSelector } from "../../redux/selectors"
+import { SkeletonChannelItem } from "../Skeleton/SkeletonLoaders"
 
 const WorkspaceSidebar: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -154,15 +147,15 @@ const WorkspaceSidebar: React.FC = () => {
   return (
     <div className="w-64 bg-gray-900 h-screen flex flex-col">
       <div className="p-4 border-b border-gray-700">
-      <Button
-        color="light"
-        size="sm" // Increased from xs to sm for better proportions
-        className="w-full mb-2 flex items-center justify-center text-sm font-semibold py-2" // Adjusted text size and added more vertical padding
-        onClick={() => navigate("/")}
-      >
-        <HiArrowLeft className="mr-2 h-5 w-5" /> {/* Increased icon size */}
-        Back to Home
-      </Button>
+        <Button
+          color="light"
+          size="sm" // Increased from xs to sm for better proportions
+          className="w-full mb-2 flex items-center justify-center text-sm font-semibold py-2" // Adjusted text size and added more vertical padding
+          onClick={() => navigate("/")}
+        >
+          <HiArrowLeft className="mr-2 h-5 w-5" /> {/* Increased icon size */}
+          Back to Home
+        </Button>
         <h1 className="text-white font-bold text-lg flex items-center">
           {workspace ? workspace.name : "Loading workspace..."}
           <span className="ml-auto text-gray-400 text-xs">Y</span>
@@ -231,7 +224,10 @@ const WorkspaceSidebar: React.FC = () => {
           {channelsExpanded && (
             <div className="mt-2 space-y-1">
               {isLoading ? (
-                <div className="px-4 py-2 text-gray-400 text-sm">Loading channels...</div>
+                // Show skeleton loaders for channels
+                Array(3)
+                  .fill(0)
+                  .map((_, index) => <SkeletonChannelItem key={`skeleton-${index}`} />)
               ) : channels.length > 0 ? (
                 channels.map((channel) => (
                   <ChannelItem key={channel._id} channel={channel} onChannelLeave={fetchChannels} />
@@ -257,7 +253,12 @@ const WorkspaceSidebar: React.FC = () => {
           </div>
           {directMessagesExpanded && (
             <div className="mt-2 space-y-1">
-              {alldm.length > 0 ? (
+              {isLoading ? (
+                // Show skeleton loaders for direct messages
+                Array(2)
+                  .fill(0)
+                  .map((_, index) => <SkeletonChannelItem key={`dm-skeleton-${index}`} />)
+              ) : alldm.length > 0 ? (
                 alldm.map((dm) => <DirectMessageItem key={dm.conversationId} directMessage={dm} />)
               ) : (
                 <div className="px-4 py-2 text-gray-400 text-sm">No direct messages</div>

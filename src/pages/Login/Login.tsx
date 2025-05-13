@@ -8,9 +8,9 @@ import { login, loginWithAuth0 } from '../../api/auth.api'
 import { Link, useNavigate } from 'react-router-dom'
 import { useAuth0 } from '@auth0/auth0-react'
 import Google from '../../assets/icons/google.svg'
-import LoadingOverlay from '../../components/LoadingPage/Loading'
 import { toast } from 'react-toastify'
 import { getAuthSelector } from '../../redux/selectors'
+import { SkeletonWorkspaceItem } from '../../components/Skeleton/SkeletonLoaders'
 
 export default function Login() {
   const auth: any = useSelector(getAuthSelector)
@@ -208,7 +208,12 @@ export default function Login() {
           </Link>
         </p>
       </Card>
-      <LoadingOverlay isLoading={isLoading || isGoogleLoading} />
+      {isLoading && (
+        // Show skeleton loaders for workspaces
+        Array(3)
+          .fill(0)
+          .map((_, index) => <SkeletonWorkspaceItem key={`workspace-skeleton-${index}`} />)
+      )}
     </div>
   )
 }

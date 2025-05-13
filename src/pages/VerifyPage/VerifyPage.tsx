@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
-import { Loader, CheckCircle, XCircle } from 'lucide-react'
-import { verifyAccount } from '../../api/mail.api'
-import { useDispatch } from 'react-redux'
-import authSlice from '../../redux/authSlice'
+import { useEffect, useState } from "react"
+import { useNavigate, useParams } from "react-router-dom"
+import { CheckCircle, XCircle } from "lucide-react"
+import { verifyAccount } from "../../api/mail.api"
+import { useDispatch } from "react-redux"
+import authSlice from "../../redux/authSlice"
+import LoadingIndicator from "../../components/LoadingPage/Loading"
 
 const VerifyPage = () => {
   const { token, email } = useParams<{ token: string; email: string }>()
-  const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading')
-  const [message, setMessage] = useState('')
+  const [status, setStatus] = useState<"loading" | "success" | "error">("loading")
+  const [message, setMessage] = useState("")
   const [count, setCount] = useState(3)
   const navigate = useNavigate()
   const dispatch = useDispatch()
@@ -17,14 +18,14 @@ const VerifyPage = () => {
     const verifyInfo = async () => {
       try {
         const response = await verifyAccount(token as string, email as string)
-        setStatus('success')
-        setMessage('Verify account successfully')
+        setStatus("success")
+        setMessage("Verify account successfully")
         dispatch(authSlice.actions.setUser(response.data))
         timer = setTimeout(() => {
-          navigate('/')
+          navigate("/")
         }, 3000)
       } catch (error) {
-        setStatus('error')
+        setStatus("error")
         setMessage("Can't verify account. Please login to send verify mail and try again.")
       }
     }
@@ -40,28 +41,27 @@ const VerifyPage = () => {
     return () => clearInterval(timer)
   })
   return (
-    <div className='flex items-center justify-center min-h-screen bg-gray-100'>
-      <div className='bg-white shadow-lg rounded-xl p-6 text-center w-96'>
-        {status === 'loading' && (
+    <div className="flex items-center justify-center min-h-screen bg-gray-100">
+      <div className="bg-white shadow-lg rounded-xl p-6 text-center w-96">
+        {status === "loading" && (
           <div>
-            <Loader className='animate-spin mx-auto text-blue-500' size={48} />
-            <h2 className='text-lg font-semibold mt-4'>Verifying...</h2>
+            <LoadingIndicator size="lg" text="Verifying your account..." />
           </div>
         )}
 
-        {status === 'success' && (
+        {status === "success" && (
           <div>
-            <CheckCircle className='text-green-500 mx-auto' size={48} />
-            <h2 className='text-lg font-semibold mt-4 text-green-600'>
+            <CheckCircle className="text-green-500 mx-auto" size={48} />
+            <h2 className="text-lg font-semibold mt-4 text-green-600">
               {message}. Redirect to login page in {count} seconds
             </h2>
           </div>
         )}
 
-        {status === 'error' && (
+        {status === "error" && (
           <div>
-            <XCircle className='text-red-500 mx-auto' size={48} />
-            <h2 className='text-lg font-semibold mt-4 text-red-600'>{message}</h2>
+            <XCircle className="text-red-500 mx-auto" size={48} />
+            <h2 className="text-lg font-semibold mt-4 text-red-600">{message}</h2>
           </div>
         )}
       </div>
