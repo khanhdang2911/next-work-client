@@ -1,5 +1,3 @@
-"use client"
-
 import type React from "react"
 import { useState, useEffect } from "react"
 import { Button, Card, Table, Badge, Avatar, Pagination } from "flowbite-react"
@@ -12,6 +10,8 @@ import useDebounce from "../../../hooks/useDebounce"
 import { getAllWorkspaceUsers, searchWorkspaceUsers, deleteUserFromWorkspace } from "../../../api/workspace.admin.api"
 import type { IWorkspaceUser } from "../../../interfaces/Workspace"
 import { TextInput } from "flowbite-react"
+import { SkeletonTable } from "../../../components/Skeleton/SkeletonLoaders"
+import LoadingIndicator from "../../../components/LoadingPage/Loading"
 
 interface WorkspaceUserManagementPageProps {
   isEmbedded?: boolean
@@ -210,65 +210,59 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
         </div>
 
         <div className="overflow-x-auto">
-          <Table hoverable>
-            <Table.Head>
-              <Table.HeadCell>User</Table.HeadCell>
-              <Table.HeadCell>Email</Table.HeadCell>
-              <Table.HeadCell>Role</Table.HeadCell>
-              <Table.HeadCell>Joined</Table.HeadCell>
-              <Table.HeadCell>Actions</Table.HeadCell>
-            </Table.Head>
-            <Table.Body className="divide-y">
-              {isSearching ? (
-                <Table.Row>
-                  <Table.Cell colSpan={5} className="text-center py-4">
-                    <div className="flex justify-center">
-                      <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              ) : isLoading && users.length === 0 ? (
-                <Table.Row>
-                  <Table.Cell colSpan={5} className="text-center py-4">
-                    <div className="flex justify-center">
-                      <div className="h-8 w-8 border-4 border-t-blue-500 border-blue-200 rounded-full animate-spin"></div>
-                    </div>
-                  </Table.Cell>
-                </Table.Row>
-              ) : users.length > 0 ? (
-                users.map((user) => (
-                  <Table.Row key={user._id} className="bg-white">
-                    <Table.Cell className="font-medium text-gray-900">
-                      <div className="flex items-center">
-                        <Avatar img={user.avatar} rounded size="sm" className="mr-3" />
-                        {user.name}
-                      </div>
-                    </Table.Cell>
-                    <Table.Cell>{user.email}</Table.Cell>
-                    <Table.Cell>
-                      <Badge color={user.isWorkspaceAdmin ? "purple" : "blue"}>
-                        {user.isWorkspaceAdmin ? "Admin" : "Member"}
-                      </Badge>
-                    </Table.Cell>
-                    <Table.Cell>{formatDate(user.joinedAt)}</Table.Cell>
-                    <Table.Cell>
-                      <div className="flex space-x-2">
-                        <Button color="failure" size="xs" onClick={() => handleRemoveClick(user)}>
-                          <HiUserRemove className="h-4 w-4" />
-                        </Button>
-                      </div>
+          {isLoading ? (
+            <SkeletonTable rows={5} cols={5} />
+          ) : (
+            <Table hoverable>
+              <Table.Head>
+                <Table.HeadCell>User</Table.HeadCell>
+                <Table.HeadCell>Email</Table.HeadCell>
+                <Table.HeadCell>Role</Table.HeadCell>
+                <Table.HeadCell>Joined</Table.HeadCell>
+                <Table.HeadCell>Actions</Table.HeadCell>
+              </Table.Head>
+              <Table.Body className="divide-y">
+                {isSearching ? (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="text-center py-4">
+                      <LoadingIndicator size="sm" text="Searching..." />
                     </Table.Cell>
                   </Table.Row>
-                ))
-              ) : (
-                <Table.Row>
-                  <Table.Cell colSpan={5} className="text-center py-4">
-                    {searchTerm ? "No users found matching your search" : "No users found"}
-                  </Table.Cell>
-                </Table.Row>
-              )}
-            </Table.Body>
-          </Table>
+                ) : users.length > 0 ? (
+                  users.map((user) => (
+                    <Table.Row key={user._id} className="bg-white">
+                      <Table.Cell className="font-medium text-gray-900">
+                        <div className="flex items-center">
+                          <Avatar img={user.avatar} rounded size="sm" className="mr-3" />
+                          {user.name}
+                        </div>
+                      </Table.Cell>
+                      <Table.Cell>{user.email}</Table.Cell>
+                      <Table.Cell>
+                        <Badge color={user.isWorkspaceAdmin ? "purple" : "blue"}>
+                          {user.isWorkspaceAdmin ? "Admin" : "Member"}
+                        </Badge>
+                      </Table.Cell>
+                      <Table.Cell>{formatDate(user.joinedAt)}</Table.Cell>
+                      <Table.Cell>
+                        <div className="flex space-x-2">
+                          <Button color="failure" size="xs" onClick={() => handleRemoveClick(user)}>
+                            <HiUserRemove className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </Table.Cell>
+                    </Table.Row>
+                  ))
+                ) : (
+                  <Table.Row>
+                    <Table.Cell colSpan={5} className="text-center py-4">
+                      {searchTerm ? "No users found matching your search" : "No users found"}
+                    </Table.Cell>
+                  </Table.Row>
+                )}
+              </Table.Body>
+            </Table>
+          )}
         </div>
 
         {totalPages > 1 && (

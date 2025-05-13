@@ -6,9 +6,9 @@ import { HiArrowLeft, HiMail, HiUserAdd, HiCheck, HiX } from 'react-icons/hi'
 import { getChannelsByWorkspaceId, inviteUserToWorkspace, getAllWorkspaces } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import type { IChannel, IWorkspace } from '../../interfaces/Workspace'
-import LoadingOverlay from '../../components/LoadingPage/Loading'
 import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
+import { SkeletonWorkspaceItem } from '../../components/Skeleton/SkeletonLoaders'
 
 const WorkspaceInvitePage: React.FC = () => {
   const { workspaceId } = useParams<{ workspaceId: string }>()
@@ -145,7 +145,16 @@ const WorkspaceInvitePage: React.FC = () => {
   }
 
   if (isLoading) {
-    return <LoadingOverlay isLoading={true} />
+    return (
+      <div className="w-16 bg-gray-800 h-screen flex flex-col items-center py-4">
+        {isLoading && (
+                // Show skeleton loaders for workspaces
+                Array(3)
+                  .fill(0)
+                  .map((_, index) => <SkeletonWorkspaceItem key={`workspace-skeleton-${index}`} />)
+              )}
+      </div>
+    )
   }
 
   if (!isAdmin) {
