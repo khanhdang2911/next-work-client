@@ -121,11 +121,12 @@ const WorkspacePage: React.FC = () => {
     )
   }
 
-  // Check if we're viewing a direct message (URL contains /dm/)
+  // First, let's add a check for chatbot conversations
   const isViewingDirectMessage = window.location.pathname.includes(`/workspace/${workspaceId}/dm/`)
+  const isViewingChatbot = window.location.pathname.includes(`/workspace/${workspaceId}/conversation/`)
 
-  // If we have a conversationId and we're viewing a direct message, always render the chat area
-  if (conversationId && isViewingDirectMessage) {
+  // If we have a conversationId and we're viewing a direct message or chatbot, always render the chat area
+  if (conversationId && (isViewingDirectMessage || isViewingChatbot)) {
     return (
       <div className="flex h-screen">
         <WorkspaceList activeWorkspaceId={workspaceId} />
@@ -135,8 +136,8 @@ const WorkspacePage: React.FC = () => {
     )
   }
 
-  // Handle case when workspace has no channels and we're not viewing a direct message
-  if (channels.length === 0) {
+  // Handle case when workspace has no channels and we're not viewing a direct message or chatbot
+  if (channels.length === 0 && !isViewingDirectMessage && !isViewingChatbot) {
     return (
       <div className="flex h-screen">
         <WorkspaceList activeWorkspaceId={workspaceId} />

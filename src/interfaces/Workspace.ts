@@ -33,7 +33,8 @@ export interface IMessage {
   attachments?: IAttachment[]
   createdAt: string
   updatedAt: string
-  isEdited?: boolean // Added isEdited field
+  isEdited?: boolean
+  isChatbot?: boolean 
 }
 
 export interface IReaction {

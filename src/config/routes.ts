@@ -7,6 +7,7 @@ const routes = {
   workspace: '/workspace/:workspaceId',
   channel: '/workspace/:workspaceId/channel/:conversationId',
   directMessage: '/workspace/:workspaceId/dm/:conversationId',
+  chatbotMessage: '/workspace/:workspaceId/conversation/:conversationId',
   profile: '/profile',
   viewProfile: '/profile/:userId',
   invite: '/workspace/:workspaceId/invite',

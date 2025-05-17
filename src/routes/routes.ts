@@ -84,6 +84,11 @@ const privateRoutes: IRoute[] = [
     layout: null
   },
   {
+    path: routes.chatbotMessage,
+    component: WorkspacePage,
+    layout: null
+  },
+  {
     path: routes.profile,
     component: ProfilePage,
     layout: null

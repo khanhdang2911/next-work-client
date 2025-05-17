@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams } from "react-router-dom"
 import ChatHeader from "./ChatHeader"
 import MessageItem from "./MessageItem"
+import ChatbotMessageItem from "./ChatbotMessageItem"
 import MessageInput from "./MessageInput"
 import type { IMessage, IChannel, IDirectMessage } from "../../interfaces/Workspace"
 import {
@@ -13,6 +14,7 @@ import {
   deleteMessage,
   reactToMessage,
 } from "../../api/auth.api"
+import { createChatbotMessage } from "../../api/conversation.api"
 import { toast } from "react-toastify"
 import { ErrorMessage } from "../../config/constants"
 import useSocket from "../../hooks/useSocket"
@@ -37,6 +39,8 @@ const ChatArea: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true)
   const [currentChannel, setCurrentChannel] = useState<IChannel | null>(null)
   const [currentDirectMessage, setCurrentDirectMessage] = useState<IDirectMessage | null>(null)
+  const [isChatbotConversation, setIsChatbotConversation] = useState(false)
+  const [isChatbotTyping, setIsChatbotTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   // Socket integration
@@ -49,6 +53,15 @@ const ChatArea: React.FC = () => {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" }) // Use "auto" for instant scrolling
   }, [])
+  
+  useEffect(() => {
+    const isViewingChatbot = window.location.pathname.includes(`/workspace/${workspaceId}/conversation/`);
+    if (isViewingChatbot) {
+      setIsChatbotConversation(true);
+    } else {
+      setIsChatbotConversation(false);
+    }
+  }, [workspaceId]);
 
   useEffect(() => {
     scrollToBottom() // Scroll to the bottom whenever messages change
@@ -65,8 +78,9 @@ const ChatArea: React.FC = () => {
           const channel = res.data.find((ch: IChannel) => ch.conversationId === conversationId)
           if (channel) {
             setCurrentChannel(channel)
+            setIsChatbotConversation(false)
           } else {
-            // If not found in channels, it might be a direct message
+            // If not found in channels, it might be a direct message or chatbot
             setCurrentChannel(null)
           }
         }
@@ -89,8 +103,13 @@ const ChatArea: React.FC = () => {
           const dm = res.data.find((dm: IDirectMessage) => dm.conversationId === conversationId)
           if (dm) {
             setCurrentDirectMessage(dm)
+            setIsChatbotConversation(false)
           } else {
             setCurrentDirectMessage(null)
+            // If not found in direct messages and not in channels, it might be a chatbot conversation
+            if (!currentChannel) {
+              setIsChatbotConversation(true)
+            }
           }
         }
       } catch (error: any) {
@@ -99,7 +118,8 @@ const ChatArea: React.FC = () => {
     }
 
     fetchCurrentDirectMessage()
-  }, [conversationId, workspaceId])
+  }, [conversationId, workspaceId, currentChannel])
+  
 
   const fetchMessages = useCallback(
     async (showLoadingState = true) => {
@@ -179,7 +199,7 @@ const ChatArea: React.FC = () => {
 
   // Handle sending a new message
   const handleSendMessage = useCallback(
-    (messageOrContent: string | IMessage) => {
+    async (messageOrContent: string | IMessage) => {
       // If it's a string (from editing), convert to IMessage
       if (typeof messageOrContent === "string") {
         // This case is for editing messages
@@ -203,13 +223,41 @@ const ChatArea: React.FC = () => {
       // Add message to local state immediately for better UX
       setMessages((prev) => [...prev, enrichedMessage])
 
-      // Send via socket
-      sendMessage(message)
+      // If this is a chatbot conversation, handle it differently
+      if (isChatbotConversation) {
+        try {
+          setIsChatbotTyping(true)
+          // Send the message to the chatbot API
+          const response = await createChatbotMessage(conversationId!, message.content)
+
+          if (response.status === "success") {
+            // Add the chatbot's response to the messages
+            const chatbotMessage = {
+              ...response.data,
+              isChatbot: true,
+              senderId: {
+                _id: "chatbot",
+                name: "AI Assistant",
+                avatar: "",
+              },
+            }
+            setMessages((prev) => [...prev, chatbotMessage])
+            setTimeout(scrollToBottom, 100)
+          }
+        } catch (error: any) {
+          toast.error(error.response?.data?.message ?? ErrorMessage)
+        } finally {
+          setIsChatbotTyping(false)
+        }
+      } else {
+        // For regular conversations, send via socket
+        sendMessage(message)
+      }
 
       // Scroll to bottom
       setTimeout(scrollToBottom, 100)
     },
-    [auth.user],
+    [auth.user, isChatbotConversation, conversationId],
   )
 
   const handleAttachFile = useCallback(() => {}, [currentChannel?._id, directMessageId])
@@ -318,7 +366,12 @@ const ChatArea: React.FC = () => {
 
   return (
     <div className="flex-1 flex flex-col h-full">
-      <ChatHeader channel={currentChannel} directMessage={currentDirectMessage} onlineUsers={onlineUsers} />
+      <ChatHeader
+        channel={currentChannel}
+        directMessage={currentDirectMessage}
+        onlineUsers={onlineUsers}
+        isChatbot={isChatbotConversation}
+      />
 
       <div className="flex-1 overflow-y-auto">
         <div className="py-4">
@@ -330,6 +383,18 @@ const ChatArea: React.FC = () => {
               </div>
             </div>
           )}
+
+          {isChatbotConversation && messages.length === 0 && (
+            <div className="px-4 pb-4">
+              <div className="bg-gray-100 dark:bg-gray-700 p-3 rounded-lg">
+                <h3 className="font-semibold text-gray-800 dark:text-gray-200 mb-1">AI Assistant</h3>
+                <p className="text-gray-600 dark:text-gray-300">
+                  Hello! I'm your AI assistant. How can I help you today?
+                </p>
+              </div>
+            </div>
+          )}
+
           {messages.length > 0 ? (
             messages.map((message) => {
               if (editingMessageId === message._id) {
@@ -354,6 +419,12 @@ const ChatArea: React.FC = () => {
                 )
               }
 
+              // Use ChatbotMessageItem for chatbot conversations
+              
+              if (isChatbotConversation) {
+                return <ChatbotMessageItem key={message._id} message={message} />
+              }
+
               return (
                 <MessageItem
                   key={message._id}
@@ -366,7 +437,7 @@ const ChatArea: React.FC = () => {
                 />
               )
             })
-          ) : (
+          ) : ( !isChatbotConversation &&
             <div className="flex items-center justify-center h-full p-8">
               <div className="text-center text-gray-500">
                 <p className="text-lg mb-2">No messages yet</p>
@@ -374,6 +445,37 @@ const ChatArea: React.FC = () => {
               </div>
             </div>
           )}
+
+          {isChatbotTyping && (
+            <div className="px-4 py-2">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 mr-3">
+                  <div className="h-8 w-8 rounded-full bg-gray-200 flex items-center justify-center">
+                    <span className="text-xs">AI</span>
+                  </div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center mb-1">
+                    <span className="font-semibold text-sm">AI Assistant</span>
+                  </div>
+                  <div className="text-sm">
+                    <div className="flex space-x-1">
+                      <div className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"></div>
+                      <div
+                        className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.2s" }}
+                      ></div>
+                      <div
+                        className="h-2 w-2 bg-gray-400 rounded-full animate-bounce"
+                        style={{ animationDelay: "0.4s" }}
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
@@ -386,6 +488,7 @@ const ChatArea: React.FC = () => {
           conversationId={conversationId}
           channelName={currentChannel?.name}
           directMessageName={currentDirectMessage?.name}
+          isChatbot={isChatbotConversation}
         />
       )}
     </div>
