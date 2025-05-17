@@ -21,6 +21,7 @@ interface MessageInputProps {
   conversationId?: string
   channelName?: string
   directMessageName?: string
+  isChatbot?: boolean;
 }
 
 const MAX_FILE_SIZE = 40 * 1024 * 1024
@@ -62,7 +63,9 @@ const MessageInput: React.FC<MessageInputProps> = ({
   // Close emoji picker when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
+      // Only close if clicking outside both the emoji picker and the emoji button
       if (
+        showEmojiPicker &&
         emojiPickerRef.current &&
         !emojiPickerRef.current.contains(event.target as Node) &&
         emojiButtonRef.current &&
@@ -76,7 +79,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
     return () => {
       document.removeEventListener("mousedown", handleClickOutside)
     }
-  }, [])
+  }, [showEmojiPicker]) // Add showEmojiPicker as a dependency
 
   // Convert formatted content to markdown before sending
   const getMarkdownContent = () => {
@@ -245,12 +248,58 @@ const MessageInput: React.FC<MessageInputProps> = ({
     }
   }
 
+  // Update the handleEmojiSelect function to properly insert emojis at the current cursor position
   const handleEmojiSelect = (emojiData: EmojiClickData) => {
     if (contentEditableRef.current) {
-      // Insert emoji at current cursor position
+      // Store the current cursor position before focusing
+      const savedSelection = saveSelection(contentEditableRef.current)
+
+      // Focus the input
+      contentEditableRef.current.focus()
+
+      if (savedSelection) {
+        // Restore the cursor position
+        restoreSelection(savedSelection)
+      } else {
+        // If no saved selection, place cursor at the end
+        const range = document.createRange()
+        const selection = window.getSelection()
+        range.selectNodeContents(contentEditableRef.current)
+        range.collapse(false) // collapse to the end
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
+
+      // Insert the emoji at the current cursor position
       document.execCommand("insertText", false, emojiData.emoji)
+
+      // Update the message state with the new content
+      setMessage(contentEditableRef.current.innerText)
     }
-    setShowEmojiPicker(false)
+  }
+
+  // Add these helper functions to save and restore selection (cursor position)
+  const saveSelection = (containerEl: HTMLElement) => {
+    if (window.getSelection) {
+      const sel = window.getSelection()
+      if (sel && sel.rangeCount > 0) {
+        const range = sel.getRangeAt(0)
+        if (containerEl.contains(range.commonAncestorContainer)) {
+          return range.cloneRange()
+        }
+      }
+    }
+    return null
+  }
+
+  const restoreSelection = (savedSel: Range) => {
+    if (window.getSelection && savedSel) {
+      const sel = window.getSelection()
+      sel?.removeAllRanges()
+      sel?.addRange(savedSel)
+      return true
+    }
+    return false
   }
 
   const handleFileUpload = (file: File) => {
@@ -280,6 +329,21 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const handleContentChange = () => {
     if (contentEditableRef.current) {
       setMessage(contentEditableRef.current.innerText)
+    }
+  }
+
+  // Add this function after the handleContentChange function
+  const handleFocus = () => {
+    if (contentEditableRef.current) {
+      // If there's no content, place cursor at the beginning
+      if (!contentEditableRef.current.textContent) {
+        const range = document.createRange()
+        const selection = window.getSelection()
+        range.setStart(contentEditableRef.current, 0)
+        range.collapse(true)
+        selection?.removeAllRanges()
+        selection?.addRange(range)
+      }
     }
   }
 
@@ -339,6 +403,7 @@ const MessageInput: React.FC<MessageInputProps> = ({
             contentEditable
             onInput={handleContentChange}
             onKeyDown={handleKeyDown}
+            onFocus={handleFocus}
             data-placeholder={getPlaceholderText()}
             style={{ outline: "none" }}
             dangerouslySetInnerHTML={{ __html: initialContent }}

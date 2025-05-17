@@ -5,6 +5,7 @@ import { Button } from "flowbite-react"
 import { HiChevronDown, HiChevronRight, HiPlus, HiUserAdd, HiShieldCheck, HiLogout, HiArrowLeft } from "react-icons/hi"
 import ChannelItem from "./ChannelItem"
 import DirectMessageItem from "./DirectMessageItem"
+import ChatbotItem from "./ChatbotItem"
 import CreateChannelModal from "./CreateChannelModal"
 import ConfirmDialog from "../ConfirmDialog/ConfirmDialog"
 import {
@@ -239,7 +240,7 @@ const WorkspaceSidebar: React.FC = () => {
           )}
         </div>
 
-        <div>
+        <div className="mb-4">
           <div
             className="flex items-center px-4 py-1 text-gray-300 cursor-pointer"
             onClick={() => setDirectMessagesExpanded(!directMessagesExpanded)}
@@ -265,6 +266,16 @@ const WorkspaceSidebar: React.FC = () => {
               )}
             </div>
           )}
+        </div>
+
+        {/* AI Assistant Section */}
+        <div className="mb-4">
+          <div className="px-4 py-1 text-gray-300">
+            <span className="text-sm font-medium">AI ASSISTANT</span>
+          </div>
+          <div className="mt-2">
+            <ChatbotItem workspaceId={workspaceId || ""} />
+          </div>
         </div>
       </div>
 

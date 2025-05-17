@@ -2,7 +2,6 @@ import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { Button, Tooltip, Badge, Avatar } from 'flowbite-react'
 import {
-  HiHashtag,
   HiInformationCircle,
   HiPhone,
   HiVideoCamera,
@@ -11,7 +10,8 @@ import {
   HiUsers,
   HiX,
   HiUser,
-  HiMail
+  HiMail,
+  HiHashtag
 } from 'react-icons/hi'
 import type { IChannel, IDirectMessage } from '../../interfaces/Workspace'
 import { useNavigate, useParams } from 'react-router-dom'
@@ -24,6 +24,7 @@ import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
 import { createDirectConversation } from '../../api/conversation.api'
 import useDebounce from '../../hooks/useDebounce'
+const logo = '/favicon.svg'
 
 // Add a new interface for search results
 interface IUserSearchResult {
@@ -33,12 +34,13 @@ interface IUserSearchResult {
 }
 
 interface ChatHeaderProps {
-  channel?: IChannel | null
-  directMessage?: IDirectMessage | null
-  onlineUsers?: string[]
+  channel: IChannel | null
+  directMessage: IDirectMessage | null
+  onlineUsers: string[]
+  isChatbot?: boolean
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineUsers = [] }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineUsers = [], isChatbot = false }) => {
   const navigate = useNavigate()
   const { workspaceId } = useParams<{ workspaceId: string; conversationId: string }>()
   const [showMembersModal, setShowMembersModal] = useState(false)
@@ -85,7 +87,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
 
       try {
         const response = await axios.get(`/users/search/${debouncedSearchQuery}/${channel._id}`)
-        if (response.data.status === 'success') {
+        if (response.data.status === "success") {
           setSearchResults(response.data.data)
           setNoResultsFound(response.data.data.length === 0)
         }
@@ -191,9 +193,17 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
             <span className='ml-1 text-gray-500 text-sm'>{isUserOnline ? 'Online' : 'Away'}</span>
           </div>
         )}
+
+        {isChatbot && (
+          <div className="flex items-center">
+            <Avatar img={logo} rounded size="sm" alt="AI Assistant" />
+            <span className="font-semibold text-lg">AI Assistant</span>
+          </div>
+        )}
       </div>
 
-      <div className='flex items-center space-x-2 w-[60%] ml-4'>
+      { !isChatbot && (
+        <div className='flex items-center space-x-2 w-[60%] ml-4'>
         {/* Search component - Now wider */}
         <div className='relative flex-grow w-full' ref={searchRef}>
           <div className='flex items-center bg-gray-100 rounded-lg px-3 py-1.5 w-full'>
@@ -342,6 +352,14 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
             <HiInformationCircle className='h-4 w-4' />
           </Button>
         </Tooltip>
+      </div>
+      )}
+      <div>
+        {channel && (
+          <Button color="light" size="xs" onClick={() => {}}>
+            <HiInformationCircle className="h-4 w-4" />
+          </Button>
+        )}
       </div>
 
       {channel && (
