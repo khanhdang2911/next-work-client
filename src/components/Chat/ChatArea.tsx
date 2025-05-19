@@ -3,7 +3,6 @@ import { useState, useEffect, useCallback, useRef } from "react"
 import { useParams } from "react-router-dom"
 import ChatHeader from "./ChatHeader"
 import MessageItem from "./MessageItem"
-import ChatbotMessageItem from "./ChatbotMessageItem"
 import MessageInput from "./MessageInput"
 import type { IMessage, IChannel, IDirectMessage } from "../../interfaces/Workspace"
 import {
@@ -196,6 +195,14 @@ const ChatArea: React.FC = () => {
 
     return cleanup
   }, [isConnected, conversationId, setupChatListeners])
+// gỡ bỏ html
+  const sanitizeMessageContent = (raw: string): string => {
+    const tempDiv = document.createElement("div")
+    tempDiv.innerHTML = raw
+    const textContent = tempDiv.textContent || tempDiv.innerText || ""
+  
+    return textContent.trim()
+  }
 
   // Handle sending a new message
   const handleSendMessage = useCallback(
@@ -228,7 +235,8 @@ const ChatArea: React.FC = () => {
         try {
           setIsChatbotTyping(true)
           // Send the message to the chatbot API
-          const response = await createChatbotMessage(conversationId!, message.content)
+          const cleanContent = sanitizeMessageContent(message.content)
+          const response = await createChatbotMessage(conversationId!, cleanContent)
 
           if (response.status === "success") {
             // Add the chatbot's response to the messages
@@ -422,7 +430,15 @@ const ChatArea: React.FC = () => {
               // Use ChatbotMessageItem for chatbot conversations
               
               if (isChatbotConversation) {
-                return <ChatbotMessageItem key={message._id} message={message} />
+                return <MessageItem
+                key={message._id}
+                message={message}
+                user={message.senderId}
+                onEdit={handleEditMessage}
+                onDelete={handleDeleteMessage}
+                onReact={handleReactToMessage}
+                isChatbot={true}
+              />
               }
 
               return (

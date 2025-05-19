@@ -10,7 +10,6 @@ import { useAuth0 } from '@auth0/auth0-react'
 import Google from '../../assets/icons/google.svg'
 import { toast } from 'react-toastify'
 import { getAuthSelector } from '../../redux/selectors'
-import { SkeletonWorkspaceItem } from '../../components/Skeleton/SkeletonLoaders'
 
 export default function Login() {
   const auth: any = useSelector(getAuthSelector)
@@ -165,8 +164,17 @@ export default function Login() {
             </div>
             <div className='text-sm text-blue-600 hover:underline'>Forgot password?</div>
           </div>
-          <Button color='blue' type='submit' className='w-full'>
-            Sign In
+          <Button color='blue' type='submit' className='w-full' disabled={isLoading}>
+            {isLoading ? (
+                <>
+                  <div className='h-4 w-4 border-2 border-t-transparent border-blue-600 rounded-full animate-spin mr-2'></div>
+                  <span>Checking Login</span>
+                </>
+              ) : (
+                <>
+                  <p>Sign In</p>
+                </>
+              )}
           </Button>
         </form>
 
@@ -208,12 +216,6 @@ export default function Login() {
           </Link>
         </p>
       </Card>
-      {isLoading && (
-        // Show skeleton loaders for workspaces
-        Array(3)
-          .fill(0)
-          .map((_, index) => <SkeletonWorkspaceItem key={`workspace-skeleton-${index}`} />)
-      )}
     </div>
   )
 }
