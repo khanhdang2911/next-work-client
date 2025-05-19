@@ -42,13 +42,6 @@ const MessageInput: React.FC<MessageInputProps> = ({
   const [showFileUploadModal, setShowFileUploadModal] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
   const [isSending, setIsSending] = useState(false)
-  // const [formattedRanges, setFormattedRanges] = useState<
-  //   {
-  //     type: "bold" | "italic"
-  //     start: number
-  //     end: number
-  //   }[]
-  // >([])
 
   const contentEditableRef = useRef<HTMLDivElement>(null)
   const emojiPickerRef = useRef<HTMLDivElement>(null)

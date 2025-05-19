@@ -10,19 +10,21 @@ import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import { toast } from 'react-toastify'
 import EmojiPicker from 'emoji-picker-react'
 import type { EmojiClickData } from 'emoji-picker-react'
+const logo = '/favicon.svg'
 
 interface MessageItemProps {
   message: IMessage
-  user: ISender | string
+  user?: ISender | string
   onEdit: (messageId: string) => void
   onDelete: (messageId: string) => void
   onReact: (messageId: string, emoji: string) => void
   onViewProfile?: (userId: string) => void
   isOnline?: boolean
+  isChatbot?: boolean
 }
 
 const MessageItem: React.FC<MessageItemProps> = React.memo(
-  ({ message, user, onEdit, onDelete, onReact, isOnline = false }) => {
+  ({ message, user, onEdit, onDelete, onReact, isOnline = false, isChatbot = false }) => {
     const [showActions, setShowActions] = useState(false)
     const [showEmojiPicker, setShowEmojiPicker] = useState(false)
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
@@ -35,6 +37,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     // Check if user is a string or an object
     const isUserObject = typeof user !== 'string'
 
+    // If it's a chatbot message, render simplified version
     const formattedContent = useMemo(() => {
       // First replace newlines with <br> tags
       let content = message.content.replace(/\n/g, '<br>')
@@ -74,7 +77,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
     const isEdited = message.isEdited === true
 
     // Safely determine if current user is the message sender
-    const isCurrentUser = isUserObject && user._id === auth?.user?._id
+    const isCurrentUser = isUserObject && user?._id === auth?.user?._id
     const messageTime = moment(message.createdAt).format('MMM D, YYYY [at] h:mm A')
 
     // Close emoji picker when clicking outside
@@ -95,6 +98,33 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         document.removeEventListener('mousedown', handleClickOutside)
       }
     }, [])
+
+    if (isChatbot) {
+      const isUserMessage = isUserObject && user?._id !== null
+      const messageTime = moment(message.createdAt).format('MMM D, YYYY [at] h:mm A')
+      return (
+        <div className="py-2 px-4">
+
+          <div className="flex items-start">
+            {isUserMessage ? (
+              <Avatar img={user?.avatar} rounded size='md' className='mr-3'alt= "User" />
+            ) : (
+              <Avatar img={logo} rounded size="sm" alt="AI Assistant" />
+            )}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center mb-1">
+                <span className="font-semibold text-sm">{isUserObject && user?.name || "AI Assistant"}</span>
+                <span className="ml-2 text-xs text-gray-500">{messageTime}</span>
+              </div>
+              <div
+                className="text-sm whitespace-pre-wrap break-words mt-1"
+                dangerouslySetInnerHTML={{ __html: formattedContent }}
+              />
+            </div>
+          </div>
+        </div>
+      )
+    }
 
     const handleDeleteClick = () => {
       setShowDeleteConfirm(true)
@@ -129,7 +159,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
       if (isCurrentUser) {
         navigate('/profile')
       } else {
-        navigate(`/profile/${user._id}`)
+        navigate(`/profile/${user?._id}`)
       }
     }
 
@@ -173,7 +203,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         onMouseLeave={() => setShowActions(false)}
       >
         <div className='cursor-pointer relative' onClick={handleViewProfile}>
-          <Avatar img={user.avatar} rounded size='md' className='mr-3' />
+          <Avatar img={user?.avatar} rounded size='md' className='mr-3' />
           {isOnline && (
             <span className='absolute bottom-0 right-0 w-3 h-3 bg-green-500 border-2 border-white rounded-full'></span>
           )}
@@ -182,7 +212,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(
         <div className='flex-1'>
           <div className='flex items-center'>
             <span className='font-semibold cursor-pointer hover:underline' onClick={handleViewProfile}>
-              {user.name}
+              {user?.name}
             </span>
             <span className='text-gray-500 text-xs ml-2'>{messageTime}</span>
             {isEdited && <span className='text-purple-700 text-xs ml-1 font-semibold'>(Edited)</span>}
