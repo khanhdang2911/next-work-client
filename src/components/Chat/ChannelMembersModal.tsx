@@ -1,16 +1,17 @@
 import type React from 'react'
 import { useState, useEffect } from 'react'
-import { Modal, Avatar, Badge, Button } from 'flowbite-react'
+import { Modal, Avatar, Badge, Button, Spinner } from 'flowbite-react'
 import { getChannelMembers } from '../../api/auth.api'
 import { toast } from 'react-toastify'
 import type { IChannelMember } from '../../interfaces/User'
 import { useNavigate } from 'react-router-dom'
-import { HiMail, HiTrash } from 'react-icons/hi'
+import { HiPencil, HiTrash } from 'react-icons/hi'
 import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
 import { deleteMemberChannel } from '../../api/auth.api'
 import ConfirmDialog from '../ConfirmDialog/ConfirmDialog'
 import { ErrorMessage } from '../../config/constants'
+import { updateRoleChannel } from '../../api/user.api'
 
 interface ChannelMembersModalProps {
   isOpen: boolean
@@ -25,9 +26,15 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
   const [isLoading, setIsLoading] = useState(false)
   const navigate = useNavigate()
 
+  const effectiveChannelId = channelId || ""
+
   const auth: any = useSelector(getAuthSelector)
   const currentUserId = auth.user?._id
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
+  const [currentUser, setCurrentUser] = useState<IChannelMember | null>(null)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [currentUserRole, setCurrentUserRole] = useState("member")
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null)
 
   const handleDeleteClick = (userId: string) => {
@@ -88,6 +95,53 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
     navigate(`/profile/${userId}`)
   }
 
+  const handleEditClick = async (user: IChannelMember) => {
+      setCurrentUser(user)
+      setHasChanges(false);
+      setShowEditModal(true)
+      setCurrentUserRole(user.admin ? "admin" : "member")
+  }
+
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const { name, value } = e.target;
+      setCurrentUserRole(value)
+  
+      if (currentUser) {
+        const hasChangesRole = name === "role" && value !== currentUserRole;
+        setHasChanges(hasChangesRole);
+      }
+  };
+
+  const handleUpdateRole = async () => {
+    if (!hasChanges) return
+    setShowEditModal(false)
+    setIsLoading(true)
+    try {
+      const res = await updateRoleChannel(effectiveChannelId, {
+        memberId: currentUser?._id,
+        role: currentUserRole,
+      })
+
+      if (res.status === "success") {
+        setMembers((prevmembers) =>
+          prevmembers.map((member) => {
+            if (member._id === currentUser?._id) {
+              return {
+                ...member,
+                admin: currentUserRole === "admin" ? true : false,
+              }
+            }
+            return member
+          })
+        )
+        setIsLoading(false)
+      }
+
+    } catch (error: any) {
+      toast.error(error.response?.data?.message ?? ErrorMessage)
+    }
+  }
+
 
   const formatJoinDate = (dateString: string) => {
     const date = new Date(dateString)
@@ -141,9 +195,11 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
                       <Button size='xs' color='light' onClick={() => handleViewProfile(member._id)}>
                         View
                       </Button>
-                      <Button size='xs' color='light'>
-                        <HiMail className='h-4 w-4' />
-                      </Button>
+                      { currentUserId !== member._id && 
+                        <Button color="light" size="xs" onClick={() => handleEditClick(member)}>
+                          <HiPencil className="h-4 w-4" />
+                        </Button>
+                      }
                       {isCurrentUserAdmin && !member.admin && (
                         <Button
                           size='xs'
@@ -162,6 +218,45 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
           </div>
         )}
       </Modal.Body>
+      {/* Edit Channel Modal */}
+      <Modal show={showEditModal} onClose={() => setShowEditModal(false)}>
+        <Modal.Header>Edit Role Of Member</Modal.Header>
+        <Modal.Body>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="edit-role" className="block mb-2 text-sm font-medium text-gray-900">
+                Role
+              </label>
+              <select
+                id="edit-role"
+                name="role"
+                value={currentUserRole}
+                onChange={handleRoleChange}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                required
+              >
+                <option value="member">member</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button color="blue" onClick={handleUpdateRole} disabled={isLoading || !hasChanges}>
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="mr-2" />
+                Updating...
+              </>
+            ) : (
+              "Update Channel"
+            )}
+          </Button>
+          <Button color="gray" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
       <ConfirmDialog
         show={showDeleteConfirm}
         title='Delete Member'

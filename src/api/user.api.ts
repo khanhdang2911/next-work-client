@@ -5,4 +5,18 @@ const searchUsersInChannel = async (query: string, channelId: string) => {
   return response.data
 }
 
-export { searchUsersInChannel }
+const updateRoleWorkspace = async (workspaceId: string, data: any) => {
+  const response = await axios.patch(`/workspace/admin/${workspaceId}/users/role`, data)
+  return response.data
+}
+
+const updateRoleChannel = async (channelId: string, data: any) => {
+  const response = await axios.patch(`/channels/${channelId}/members/role`, data)
+  return response.data
+}
+
+export { 
+  searchUsersInChannel,
+  updateRoleWorkspace,
+  updateRoleChannel
+}

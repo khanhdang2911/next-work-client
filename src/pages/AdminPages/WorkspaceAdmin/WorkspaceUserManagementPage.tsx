@@ -1,17 +1,21 @@
 import type React from "react"
 import { useState, useEffect } from "react"
-import { Button, Card, Table, Badge, Avatar, Pagination } from "flowbite-react"
-import { HiSearch, HiUserRemove, HiUserAdd, HiArrowLeft } from "react-icons/hi"
+import { Button, Card, Table, Badge, Avatar, Pagination, Modal, Spinner } from "flowbite-react"
+import { HiSearch, HiUserRemove, HiUserAdd, HiArrowLeft, HiPencil } from "react-icons/hi"
 import { Link, useParams, useNavigate } from "react-router-dom"
 import { toast } from "react-toastify"
 import ConfirmDialog from "../../../components/ConfirmDialog/ConfirmDialog"
 import { ErrorMessage } from "../../../config/constants"
 import useDebounce from "../../../hooks/useDebounce"
 import { getAllWorkspaceUsers, searchWorkspaceUsers, deleteUserFromWorkspace } from "../../../api/workspace.admin.api"
-import type { IWorkspaceUser } from "../../../interfaces/Workspace"
+import type { IWorkspace, IWorkspaceUser } from "../../../interfaces/Workspace"
 import { TextInput } from "flowbite-react"
 import { SkeletonTable } from "../../../components/Skeleton/SkeletonLoaders"
 import LoadingIndicator from "../../../components/LoadingPage/Loading"
+import { getAllWorkspaces } from "../../../api/auth.api"
+import { updateRoleWorkspace } from "../../../api/user.api"
+import { useSelector } from "react-redux"
+import { getAuthSelector } from "../../../redux/selectors"
 
 interface WorkspaceUserManagementPageProps {
   isEmbedded?: boolean
@@ -30,9 +34,15 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
   const [isLoading, setIsLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [showRemoveModal, setShowRemoveModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [currentUser, setCurrentUser] = useState<IWorkspaceUser | null>(null)
   const [isSearching, setIsSearching] = useState(false)
+  const [hasChanges, setHasChanges] = useState(false)
+  const [currentUserRole, setCurrentUserRole] = useState("member")
   const debouncedSearchTerm = useDebounce(searchTerm, 500)
+
+  const auth: any = useSelector(getAuthSelector)
+  const currentUserId = auth.user?._id
 
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1)
@@ -114,6 +124,65 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
   const handleRemoveClick = (user: IWorkspaceUser) => {
     setCurrentUser(user)
     setShowRemoveModal(true)
+  }
+
+  const handleEditClick = async (user: IWorkspaceUser) => {
+    setCurrentUser(user)
+    setCurrentUserRole("")
+    setHasChanges(false);
+    setShowEditModal(true)
+    try {
+      const res = await getAllWorkspaces()
+      if (res.status === "success") {
+        const currentWorkspace = res.data.find((ws: IWorkspace) => ws._id === effectiveWorkspaceId)
+        if (currentWorkspace) {
+          // Check if current user is the admin of this workspace
+          setCurrentUserRole(currentWorkspace.admin.includes(user._id) ? "admin" : "member")
+        }
+      }
+    } catch (error: any) {
+      toast.error(error.response?.data?.message ?? ErrorMessage)
+    }
+  }
+
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setCurrentUserRole(value)
+
+    if (currentUser) {
+      const hasChangesRole = name === "role" && value !== currentUserRole;
+      setHasChanges(hasChangesRole);
+    }
+};
+
+  const handleUpdateRole = async () => {
+    if (!hasChanges) return
+    setShowEditModal(false)
+    setIsLoading(true)
+    try {
+      const res = await updateRoleWorkspace(effectiveWorkspaceId, {
+        memberId: currentUser?._id,
+        role: currentUserRole,
+      })
+
+      if (res.status === "success") {
+        setUsers((prevUsers) =>
+          prevUsers.map((user) => {
+            if (user._id === currentUser?._id) {
+              return {
+                ...user,
+                isWorkspaceAdmin: currentUserRole === "admin",
+              }
+            }
+            return user
+          })
+        )
+        setIsLoading(false)
+      }
+
+    } catch (error: any) {
+      toast.error(error.response?.data?.message ?? ErrorMessage)
+    }
   }
 
   // Handle invite users
@@ -230,7 +299,8 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
                   </Table.Row>
                 ) : users.length > 0 ? (
                   users.map((user) => (
-                    <Table.Row key={user._id} className="bg-white">
+                    user._id === currentUserId ? null : (
+                      <Table.Row key={user._id} className="bg-white">
                       <Table.Cell className="font-medium text-gray-900">
                         <div className="flex items-center">
                           <Avatar img={user.avatar} rounded size="sm" className="mr-3" />
@@ -246,13 +316,18 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
                       <Table.Cell>{formatDate(user.joinedAt)}</Table.Cell>
                       <Table.Cell>
                         <div className="flex space-x-2">
+                          <Button color="light" size="xs" onClick={() => handleEditClick(user)}>
+                            <HiPencil className="h-4 w-4" />
+                          </Button>
                           <Button color="failure" size="xs" onClick={() => handleRemoveClick(user)}>
                             <HiUserRemove className="h-4 w-4" />
                           </Button>
                         </div>
                       </Table.Cell>
                     </Table.Row>
-                  ))
+                  )
+                    )
+                    )
                 ) : (
                   <Table.Row>
                     <Table.Cell colSpan={5} className="text-center py-4">
@@ -271,6 +346,46 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
           </div>
         )}
       </Card>
+
+      {/* Edit Channel Modal */}
+      <Modal show={showEditModal} onClose={() => setShowEditModal(false)}>
+        <Modal.Header>Edit Role User</Modal.Header>
+        <Modal.Body>
+          <div className="space-y-4">
+            <div>
+              <label htmlFor="edit-role" className="block mb-2 text-sm font-medium text-gray-900">
+                Role
+              </label>
+              <select
+                id="edit-role"
+                name="role"
+                value={currentUserRole}
+                onChange={handleRoleChange}
+                className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5"
+                required
+              >
+                <option value="member">member</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+          </div>
+        </Modal.Body>
+        <Modal.Footer>
+          <Button color="blue" onClick={handleUpdateRole} disabled={isLoading || !hasChanges}>
+            {isLoading ? (
+              <>
+                <Spinner size="sm" className="mr-2" />
+                Updating...
+              </>
+            ) : (
+              "Update Channel"
+            )}
+          </Button>
+          <Button color="gray" onClick={() => setShowEditModal(false)}>
+            Cancel
+          </Button>
+        </Modal.Footer>
+      </Modal>
 
       {/* Remove User Modal */}
       <ConfirmDialog
