@@ -51,7 +51,7 @@ const WorkspaceSidebar: React.FC = () => {
           if (currentWorkspace) {
             setWorkspace(currentWorkspace)
             // Check if current user is the admin of this workspace
-            setIsAdminWrokspace(currentWorkspace.admin === currentUserId)
+            setIsAdminWrokspace(currentWorkspace.admin.includes(currentUserId))
           }
         }
       } catch (error: any) {
