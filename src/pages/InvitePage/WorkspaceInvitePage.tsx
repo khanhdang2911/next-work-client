@@ -38,9 +38,9 @@ const WorkspaceInvitePage: React.FC = () => {
           if (currentWorkspace) {
             setWorkspace(currentWorkspace)
             // Check if current user is the admin of this workspace
-            setIsAdmin(currentWorkspace.admin === currentUserId)
+            setIsAdmin(currentWorkspace.admin.includes(currentUserId))
 
-            if (currentWorkspace.admin === currentUserId) {
+            if (currentWorkspace.admin.includes(currentUserId)) {
               fetchChannels()
             } else {
               setError("You don't have admin permissions for this workspace")
