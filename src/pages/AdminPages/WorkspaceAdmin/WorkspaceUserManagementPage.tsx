@@ -378,7 +378,7 @@ const WorkspaceUserManagementPage: React.FC<WorkspaceUserManagementPageProps> = 
                 Updating...
               </>
             ) : (
-              "Update Channel"
+              "Update Role"
             )}
           </Button>
           <Button color="gray" onClick={() => setShowEditModal(false)}>

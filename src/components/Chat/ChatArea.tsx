@@ -42,6 +42,12 @@ const ChatArea: React.FC = () => {
   const [isChatbotTyping, setIsChatbotTyping] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  const [loadingStates, setLoadingStates] = useState({
+    channel: true,
+    directMessage: true,
+    messages: true
+  });
+
   // Socket integration
   const { isConnected, onlineUsers, setupChatListeners } = useSocket()
 
@@ -52,6 +58,13 @@ const ChatArea: React.FC = () => {
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "auto" }) // Use "auto" for instant scrolling
   }, [])
+
+  useEffect(() => {
+    // Kiểm tra khi tất cả các loading state đều false
+    if (!loadingStates.channel && !loadingStates.directMessage && !loadingStates.messages) {
+      setIsLoading(false);
+    }
+  }, [loadingStates.channel, loadingStates.directMessage, loadingStates.messages]);
   
   useEffect(() => {
     const isViewingChatbot = window.location.pathname.includes(`/workspace/${workspaceId}/conversation/`);
@@ -85,6 +98,8 @@ const ChatArea: React.FC = () => {
         }
       } catch (error: any) {
         toast.error(error.response?.data?.message ?? ErrorMessage)
+      } finally {
+        setLoadingStates(prev => ({ ...prev, channel: false }));
       }
     }
 
@@ -113,6 +128,8 @@ const ChatArea: React.FC = () => {
         }
       } catch (error: any) {
         toast.error(error.response?.data?.message ?? ErrorMessage)
+      } finally {
+        setLoadingStates(prev => ({ ...prev, directMessage: false }));
       }
     }
 
@@ -138,9 +155,7 @@ const ChatArea: React.FC = () => {
         toast.error(error.response?.data?.message ?? ErrorMessage)
         setMessages([])
       } finally {
-        if (showLoadingState) {
-          setIsLoading(false)
-        }
+        setLoadingStates(prev => ({ ...prev, messages: false }));
       }
     },
     [conversationId],

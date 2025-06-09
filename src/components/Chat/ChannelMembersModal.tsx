@@ -195,7 +195,7 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
                       <Button size='xs' color='light' onClick={() => handleViewProfile(member._id)}>
                         View
                       </Button>
-                      { currentUserId !== member._id && 
+                      {isCurrentUserAdmin && currentUserId !== member._id && 
                         <Button color="light" size="xs" onClick={() => handleEditClick(member)}>
                           <HiPencil className="h-4 w-4" />
                         </Button>
@@ -249,7 +249,7 @@ const ChannelMembersModal: React.FC<ChannelMembersModalProps> = ({ isOpen, onClo
                 Updating...
               </>
             ) : (
-              "Update Channel"
+              "Update Role"
             )}
           </Button>
           <Button color="gray" onClick={() => setShowEditModal(false)}>
