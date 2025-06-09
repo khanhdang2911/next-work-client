@@ -2,9 +2,6 @@ import type React from 'react'
 import { useState, useEffect, useRef } from 'react'
 import { Button, Tooltip, Badge, Avatar } from 'flowbite-react'
 import {
-  HiInformationCircle,
-  HiPhone,
-  HiVideoCamera,
   HiUserAdd,
   HiSearch,
   HiUsers,
@@ -24,6 +21,8 @@ import { useSelector } from 'react-redux'
 import { getAuthSelector } from '../../redux/selectors'
 import { createDirectConversation } from '../../api/conversation.api'
 import useDebounce from '../../hooks/useDebounce'
+import { getChannelMembers } from '../../api/auth.api'
+import { IChannelMember } from '../../interfaces/User'
 const logo = '/favicon.svg'
 
 // Add a new interface for search results
@@ -57,6 +56,7 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
   const currentUserId = auth?.user?._id
   const [isCreatingConversation, setIsCreatingConversation] = useState(false)
 
+  const [members, setMembers] = useState<IChannelMember[]>([])
   // Use the debounce hook to delay search
 
   // Handle click outside to close search results
@@ -72,6 +72,22 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
       document.removeEventListener('mousedown', handleClickOutside)
     }
   }, [])
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      if (!channel?._id) return
+      try {
+        const response = await getChannelMembers(channel._id)
+        if (response.status === 'success') {
+          setMembers(response.data)
+        }
+      } catch (error: any) {
+        toast.error(error.response?.data?.message || ErrorMessage)
+      }
+    }
+
+    fetchMembers()
+  }, [channel?._id])
 
   // Replace the useEffect for search with this improved version
   useEffect(() => {
@@ -167,42 +183,51 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
 
   // Check if direct message user is online
   const isUserOnline = directMessage && onlineUsers.includes(directMessage._id)
+  const renderContent = () => {
+    if (channel) {
+      return (
+        <div className='flex flex-col'>
+          <div className='flex items-center'>
+            <HiHashtag className='mr-2 h-4 w-4' />
+            <h2 className='font-semibold'>{channel.name}</h2>
+          </div>
+          {channel.description && (
+            <span className='mt-1 text-gray-500 text-sm pl-6'>{channel.description}</span>
+          )}
+        </div>
+      );
+    } else if (directMessage) {
+      return (
+        <div className='flex items-center h-10'>
+          <img
+            src={directMessage.avatar || '/placeholder.svg'}
+            alt={directMessage.name}
+            className='w-5 h-5 rounded-full mr-2'
+          />
+          <h2 className='font-semibold'>{directMessage.name}</h2>
+          <span className={`ml-2 w-2 h-2 rounded-full ${isUserOnline ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
+          <span className='ml-1 text-gray-500 text-sm'>{isUserOnline ? 'Online' : 'Away'}</span>
+        </div>
+        
+      );
+    } else if (isChatbot) {
+      return (
+        <div className="flex items-center">
+          <Avatar img={logo} rounded size="sm" alt="AI Assistant" />
+          <span className="font-semibold text-lg">AI Assistant</span>
+        </div>
+      );
+    }
+  };
+  
 
   return (
     <div className='border-b p-3 flex items-center'>
       <div className='flex-1'>
-        {channel && (
-          <div className='flex flex-col'>
-            <div className='flex items-center'>
-              <HiHashtag className='mr-2 h-4 w-4' />
-              <h2 className='font-semibold'>{channel.name}</h2>
-            </div>
-            {channel.description && <span className='mt-1 text-gray-500 text-sm pl-6'>{channel.description}</span>}
-          </div>
-        )}
-
-        {directMessage && (
-          <div className='flex items-center'>
-            <img
-              src={directMessage.avatar || '/placeholder.svg'}
-              alt={directMessage.name}
-              className='w-5 h-5 rounded-full mr-2'
-            />
-            <h2 className='font-semibold'>{directMessage.name}</h2>
-            <span className={`ml-2 w-2 h-2 rounded-full ${isUserOnline ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
-            <span className='ml-1 text-gray-500 text-sm'>{isUserOnline ? 'Online' : 'Away'}</span>
-          </div>
-        )}
-
-        {isChatbot && (
-          <div className="flex items-center">
-            <Avatar img={logo} rounded size="sm" alt="AI Assistant" />
-            <span className="font-semibold text-lg">AI Assistant</span>
-          </div>
-        )}
+      {renderContent()}
       </div>
 
-      { !isChatbot && (
+      { !isChatbot && !directMessage && (
         <div className='flex items-center space-x-2 w-[60%] ml-4'>
         {/* Search component - Now wider */}
         <div className='relative flex-grow w-full' ref={searchRef}>
@@ -310,24 +335,12 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
           )}
         </div>
 
-        <Tooltip content='Call'>
-          <Button color='gray' pill size='sm'>
-            <HiPhone className='h-4 w-4' />
-          </Button>
-        </Tooltip>
-
-        <Tooltip content='Video Call'>
-          <Button color='gray' pill size='sm'>
-            <HiVideoCamera className='h-4 w-4' />
-          </Button>
-        </Tooltip>
-
         <Tooltip content='View Members'>
           <Button color='gray' pill size='sm' onClick={handleViewMembers}>
             <HiUsers className='h-4 w-4' />
-            {onlineUsers.length > 0 && (
+            {members.length > 0 && (
               <Badge color='success' className='ml-1'>
-                {onlineUsers.length}
+                {members.length}
               </Badge>
             )}
           </Button>
@@ -346,21 +359,8 @@ const ChatHeader: React.FC<ChatHeaderProps> = ({ channel, directMessage, onlineU
             </Button>
           </Tooltip>
         )}
-
-        <Tooltip content='Info'>
-          <Button color='gray' pill size='sm'>
-            <HiInformationCircle className='h-4 w-4' />
-          </Button>
-        </Tooltip>
       </div>
       )}
-      <div>
-        {channel && (
-          <Button color="light" size="xs" onClick={() => {}}>
-            <HiInformationCircle className="h-4 w-4" />
-          </Button>
-        )}
-      </div>
 
       {channel && (
         <>
